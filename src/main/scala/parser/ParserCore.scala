@@ -9,6 +9,18 @@ trait ParseRule[A] {
 
   def flatMap[B](f: A => ParseRule[B]): ParseRule[B] =
     FlatMap(this, f)
+
+  def <|>(other: ParseRule[A]): ParseRule[A] =
+    Or(this, other)
+
+  def or(other: ParseRule[A]): ParseRule[A] =
+    Or(this, other)
+
+  def repeat(range: Range): ParseRule[List[A]] =
+    Repeat(this, range)
+
+  def maybe: ParseRule[Option[A]] =
+    Maybe(this)
 }
 
 case class Map[A, B](parser: ParseRule[A], f: A => B) extends ParseRule[B] {
