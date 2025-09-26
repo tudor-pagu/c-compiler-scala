@@ -1,12 +1,13 @@
 enum Token:
   case Identifier(name: String)
   case Number(value: String)
-  case OpenParen()
-  case CloseParen()
-  case Semicolon()
-  case EOF()
+  case OpenParen
+  case CloseParen
+  case Semicolon
+  case Plus, Minus, Times, Div
+  case EOF
 
-case class TokenInfo(token: Token, span : Span)
+case class TokenInfo(token: Token, span: Span)
 
 case class Empty()
 case class Accept(token: Token)
@@ -15,7 +16,7 @@ class Lexer private (input: File, ind: Int) {
   def makeError(message: String): CompilerError =
     CompilerError(message, Span(ind, ind + 1, input))
 
-  def makeTokenInfo(token: Token, start:Int, end: Int): TokenInfo = 
+  def makeTokenInfo(token: Token, start: Int, end: Int): TokenInfo =
     TokenInfo(token, Span(start, end, input))
 
   def this(input: File) = this(input, 0)
@@ -39,10 +40,12 @@ class Lexer private (input: File, ind: Int) {
 
       i += 1
 
-    if currentState == Empty() then Right(makeTokenInfo(Token.EOF(),i, i), new Lexer(input, i))
+    if currentState == Empty() then
+      Right(makeTokenInfo(Token.EOF, i, i), new Lexer(input, i))
     else
       transition(currentState, ' ') match
-        case Accept(token)    => Right(makeTokenInfo(token, ind, i), new Lexer(input, i))
+        case Accept(token) =>
+          Right(makeTokenInfo(token, ind, i), new Lexer(input, i))
         case c: CompilerError => Left(c)
         case _                => Left(makeError("Unexpected end of input."))
   }
@@ -56,9 +59,13 @@ class Lexer private (input: File, ind: Int) {
   ): Empty | Accept | Token | CompilerError = token match
     case Empty() =>
       c match
-        case '('                 => Token.OpenParen()
-        case ')'                 => Token.CloseParen()
-        case ';'                 => Token.Semicolon()
+        case '('                 => Token.OpenParen
+        case ')'                 => Token.CloseParen
+        case ';'                 => Token.Semicolon
+        case '+'                 => Token.Plus
+        case '-'                 => Token.Minus
+        case '*'                 => Token.Times
+        case '/'                 => Token.Div
         case d if d.isDigit      => Token.Number(d.toString)
         case i if i.isLetter     => Token.Identifier(i.toString)
         case _ if c.isWhitespace => Empty()
@@ -71,10 +78,9 @@ class Lexer private (input: File, ind: Int) {
       c match
         case d if d.isDigit => Token.Number(value + d.toString)
         case _              => Accept(token)
-    case token @ Token.OpenParen()  => Accept(token)
-    case token @ Token.CloseParen() => Accept(token)
-    case token @ Token.Semicolon()  => Accept(token)
-    case token @ Token.EOF()        => Accept(token)
+    case t @ (Token.OpenParen | Token.CloseParen | Token.Semicolon | Token.EOF |
+        Token.Plus | Token.Minus | Token.Times | Token.Div) =>
+      Accept(t)
 
     // case _ =>
     //   makeError(s"Received invalid character $c.")
