@@ -1,10 +1,10 @@
-sealed trait Token
-case class Identifier(name: String) extends Token
-case class Number(value: String) extends Token
-case class OpenParen() extends Token
-case class CloseParen() extends Token
-case class Semicolon() extends Token
-case class EOF() extends Token
+enum Token:
+  case Identifier(name: String)
+  case Number(value: String)
+  case OpenParen()
+  case CloseParen()
+  case Semicolon()
+  case EOF()
 
 case class Empty()
 case class Accept(token: Token)
@@ -15,6 +15,7 @@ class Lexer private (input: File, ind: Int) {
 
   def this(input: File) = this(input, 0)
   def nextToken(): (Token, Lexer) | CompilerError = {
+    println(s"tpagu debug $ind");
 
     var currentState: Empty | Token = Empty();
     var i = ind
@@ -33,10 +34,10 @@ class Lexer private (input: File, ind: Int) {
 
       i += 1
 
-    if currentState == Empty() then (EOF(), new Lexer(input, ind))
+    if currentState == Empty() then (Token.EOF(), new Lexer(input, i))
     else
       transition(currentState, ' ') match
-        case Accept(token)    => (token, new Lexer(input, ind))
+        case Accept(token)    => (token, new Lexer(input, i))
         case c: CompilerError => c
         case _                => makeError("Unexpected end of input.")
   }
@@ -50,22 +51,25 @@ class Lexer private (input: File, ind: Int) {
   ): Empty | Accept | Token | CompilerError = token match
     case Empty() =>
       c match
-        case '('                 => OpenParen()
-        case ')'                 => CloseParen()
-        case ';'                 => Semicolon()
-        case d if d.isDigit      => Number(d.toString)
-        case i if i.isLetter     => Identifier(i.toString)
+        case '('                 => Token.OpenParen()
+        case ')'                 => Token.CloseParen()
+        case ';'                 => Token.Semicolon()
+        case d if d.isDigit      => Token.Number(d.toString)
+        case i if i.isLetter     => Token.Identifier(i.toString)
         case _ if c.isWhitespace => Empty()
         case _ => throw new Exception(s"Unexpected character: $c")
-    case token @ Identifier(name) =>
+    case token @ Token.Identifier(name) =>
       c match
-        case i if i.isLetterOrDigit => Identifier(name + i.toString)
-        case _ if c.isWhitespace    => Accept(token)
-    case token @ Number(value) =>
+        case i if i.isLetterOrDigit => Token.Identifier(name + i.toString)
+        case _                      => Accept(token)
+    case token @ Token.Number(value) =>
       c match
-        case d if d.isDigit      => Number(value + d.toString)
-        case _ if c.isWhitespace => Accept(token)
-    case token @ OpenParen() => Accept(token)
+        case d if d.isDigit => Token.Number(value + d.toString)
+        case _              => Accept(token)
+    case token @ Token.OpenParen()  => Accept(token)
+    case token @ Token.CloseParen() => Accept(token)
+    case token @ Token.Semicolon()  => Accept(token)
+    case token @ Token.EOF()        => Accept(token)
 
     // case _ =>
     //   makeError(s"Received invalid character $c.")
