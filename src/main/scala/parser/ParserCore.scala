@@ -48,10 +48,73 @@ case class Just(expected: Token) extends ParseRule[TokenInfo] {
     lexer.nextToken() match {
       case Left(err) => Left(err)
       case Right((tokenInfo, nextLexer)) =>
-        if (tokenInfo.token == expected) 
+        if (tokenInfo.token == expected)
           Right((tokenInfo, nextLexer))
-        else 
-          Left(CompilerError(s"Expected $expected, got ${tokenInfo.token}", tokenInfo.span))
+        else
+          Left(
+            CompilerError(
+              s"Expected $expected, got ${tokenInfo.token}",
+              tokenInfo.span
+            )
+          )
     }
 }
+
+// Expect one of several tokens
+case class OneOf(expected: List[Token]) extends ParseRule[TokenInfo] {
+  def parse(lexer: Lexer): Either[CompilerError, Out[TokenInfo]] =
+    lexer.nextToken() match {
+      case Left(err) => Left(err)
+      case Right((tokenInfo, nextLexer)) =>
+        if (expected.contains(tokenInfo.token))
+          Right((tokenInfo, nextLexer))
+        else
+          Left(
+            CompilerError(
+              s"Expected one of $expected, got ${tokenInfo.token}",
+              tokenInfo.span
+            )
+          )
+    }
+}
+
+// Repeat parser between min and max times
+case class Repeat[A](parser: ParseRule[A], range: Range)
+    extends ParseRule[List[A]] {
+  def parse(lexer: Lexer): Either[CompilerError, Out[List[A]]] = {
+    def loop(
+        currentLexer: Lexer,
+        acc: List[A],
+        count: Int
+    ): Either[CompilerError, Out[List[A]]] = {
+      val min = range.start
+      val max = if (range.isInclusive) range.end else range.end - 1
+
+      if (count >= max) {
+        Right((acc.reverse, currentLexer))
+      } else {
+        parser.parse(currentLexer) match {
+          case Right((value, nextLexer)) =>
+            loop(nextLexer, value :: acc, count + 1)
+          case Left(_) if count >= min =>
+            Right((acc.reverse, currentLexer))
+          case Left(error) =>
+            Left(error)
+        }
+      }
+    }
+    loop(lexer, Nil, 0)
+  }
+}
+
+// Optional parser
+case class Maybe[A](parser: ParseRule[A]) extends ParseRule[Option[A]] {
+  def parse(lexer: Lexer): Either[CompilerError, Out[Option[A]]] =
+    parser.parse(lexer) match {
+      case Right((value, nextLexer)) => Right((Some(value), nextLexer))
+      case Left(_)                   => Right((None, lexer))
+    }
+}
+
+
 
