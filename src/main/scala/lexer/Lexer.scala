@@ -6,6 +6,8 @@ enum Token:
   case Semicolon()
   case EOF()
 
+case class TokenInfo(token: Token, span : Span)
+
 case class Empty()
 case class Accept(token: Token)
 
@@ -13,8 +15,11 @@ class Lexer private (input: File, ind: Int) {
   def makeError(message: String): CompilerError =
     CompilerError(message, Span(ind, ind + 1, input))
 
+  def makeTokenInfo(token: Token, start:Int, end: Int): TokenInfo = 
+    TokenInfo(token, Span(start, end, input))
+
   def this(input: File) = this(input, 0)
-  def nextToken(): (Token, Lexer) | CompilerError = {
+  def nextToken(): Either[CompilerError, (TokenInfo, Lexer)] = {
     println(s"tpagu debug $ind");
 
     var currentState: Empty | Token = Empty();
@@ -26,20 +31,20 @@ class Lexer private (input: File, ind: Int) {
           assert(currentState == Empty())
           currentState = Empty()
         case Accept(token) =>
-          return (token, new Lexer(input, i))
+          return Right((makeTokenInfo(token, ind, i + 1), new Lexer(input, i)))
         case token: Token =>
           currentState = token
         case c: CompilerError =>
-          return c
+          return Left(c)
 
       i += 1
 
-    if currentState == Empty() then (Token.EOF(), new Lexer(input, i))
+    if currentState == Empty() then Right(makeTokenInfo(Token.EOF(),i, i), new Lexer(input, i))
     else
       transition(currentState, ' ') match
-        case Accept(token)    => (token, new Lexer(input, i))
-        case c: CompilerError => c
-        case _                => makeError("Unexpected end of input.")
+        case Accept(token)    => Right(makeTokenInfo(token, ind, i), new Lexer(input, i))
+        case c: CompilerError => Left(c)
+        case _                => Left(makeError("Unexpected end of input."))
   }
 
   // we always try to eat one more character if we can. Then we return a new token

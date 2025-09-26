@@ -3,8 +3,10 @@ class LexerTest extends munit.FunSuite {
   // Helper methods
   def tokenize(input: String): Token = {
     val lexer = new Lexer(new File("test.txt", input))
-    val (token, _) = lexer.nextToken()
-    token
+    lexer.nextToken() match {
+      case Left(err) => fail("could not parse")
+      case Right(tokenInfo, lexer) => tokenInfo.token
+    }
   }
   
   def tokenizeAll(input: String): List[Token] = {
@@ -13,12 +15,11 @@ class LexerTest extends munit.FunSuite {
     
     var continue = true
     while (continue) {
-      lexer.nextToken() match {
-        case (token, nextLexer) =>
-          tokens = tokens :+ token
-          if (token == Token.EOF()) continue = false
+      lexer.nextToken() match { case Right(token, nextLexer) =>
+          tokens = tokens :+ token.token
+          if (token.token == Token.EOF()) continue = false
           else lexer = nextLexer
-        case error: CompilerError =>
+        case Left(error) =>
           fail(s"Unexpected error: $error")
       }
     }
@@ -65,19 +66,19 @@ class LexerTest extends munit.FunSuite {
       List(Token.Identifier("func"), Token.OpenParen(), Token.EOF())
     )
   }
-  //
-  // test("complex expression") {
-  //   assertEquals(
-  //     tokenizeAll("add(123, var456);"),
-  //     List(
-  //       Token.Identifier("add"),
-  //       Token.OpenParen(),
-  //       Token.Number("123"),
-  //       Token.Identifier("var456"),
-  //       Token.CloseParen(),
-  //       Token.Semicolon(),
-  //       Token.EOF()
-  //     )
-  //   )
-  // }
+
+  test("complex expression") {
+    assertEquals(
+      tokenizeAll("add(123    var456);"),
+      List(
+        Token.Identifier("add"),
+        Token.OpenParen(),
+        Token.Number("123"),
+        Token.Identifier("var456"),
+        Token.CloseParen(),
+        Token.Semicolon(),
+        Token.EOF()
+      )
+    )
+  }
 }
