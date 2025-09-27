@@ -5,8 +5,17 @@ import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.CompilerError
 import tpagu.compiler.lexer.TokenInfo
 
+def expressionStatement: ParseRule[AstExt] = (for {
+  expr <- expression
+  _ <- Just(Token.Semicolon)
+} yield Right(AstExtKind.ExprStatement(expr))).withSpan
+
+def emptyStatement: ParseRule[AstExt] = (for {
+  _ <- Just(Token.Semicolon)
+} yield Right(AstExtKind.Nothing)).withSpan
+
 def statement: ParseRule[AstExt] =
-  functionDefinition <|> blockStatement <|> declaration
+  functionDefinition <|> blockStatement <|> declaration <|> expressionStatement <|> emptyStatement
 
 def declarator: ParseRule[Declarator] =
   directDeclarator.map(decl => Right(Declarator(Nil, decl)))
@@ -101,3 +110,7 @@ def functionDefinition: ParseRule[AstExt] =
   } yield Right(AstExtKind.FunctionDefinition(Declaration(declSpecs, Declarator(Nil, decl)), body)))
     .withSpan
     .named("function definition")
+
+def translationUnit: ParseRule[AstExt] =
+  statement.many.map(stmts => Right(AstExtKind.TranslationUnit(stmts))).withSpan.named("translation unit")
+

@@ -27,6 +27,9 @@ enum AstExtKind:
   case DeclarationList(declSpecifiers: List[DeclarationSpecifier], initDeclaratorList: List[(Declarator, Option[AstExt])])
   case FunctionDefinition(declaration: Declaration, body: AstExt)
   case Block(statements: List[AstExt])
+  case TranslationUnit(statements: List[AstExt])
+  case ExprStatement(e: AstExt)
+  case Nothing
 
   override def toString(): String = this match {
     case AstExtKind.IntLiteral(value)    => s"Int($value)"
@@ -52,6 +55,12 @@ enum AstExtKind:
       s"Block({ $stmtStrings })"
     case AstExtKind.FunctionDefinition(declaration, body) =>
       s"FuncDef(${declaration.toString}, ${body.toString})"
+    case AstExtKind.TranslationUnit(statements) =>
+      val stmtStrings = statements.map(_.toString).mkString("; ")
+      s"TU({ $stmtStrings })"
+    case AstExtKind.ExprStatement(e) =>
+      s"ExprStmt(${e.toString})"
+    case AstExtKind.Nothing => "Nothing"
   }
 
 enum TypeQualifier:

@@ -9,10 +9,19 @@ class StatementTest extends FunSuite {
   def parseStatement(input: String): String = {
     val lexer = new Lexer(new File("test.txt", input))
     statement.parse(lexer) match {
-      case Left(err)       => fail(s"Could not parse expression: $err")
+      case Left(err)       => fail(s"Could not parse statement: $err")
       case Right((ast, _)) => ast.toString()
     }
   }
+  
+  def parseTranslationUnit(input: String): String = {
+    val lexer = new Lexer(new File("test.txt", input))
+    translationUnit.parse(lexer) match {
+      case Left(err)       => fail(s"Could not parse translation unit: $err")
+      case Right((ast, _)) => ast.toString()
+    }
+  }
+
 
   def expectParseError(
       input: String,
@@ -104,13 +113,21 @@ class StatementTest extends FunSuite {
     )
   }
 
-  test("function definition test") {
+  test("translation unit test 1") {
     assertEquals(
-      parseStatement(
-        "int a(int b) { int c; }"
+      parseTranslationUnit(
+        """
+        int f(int a, int b) {
+            a + b;
+        }
+        int main() {
+          int a = f(2, 3);
+          a + 5;
+        }
+        """
       ),
-      "FuncDef(Type(Int,List()) Func(Some(a), [Type(Int,List()) Var(Some(b))]), Block({ Declaration([Var(Some(c))]) }))"
+      """TU({ FuncDef(Type(Int,List()) Func(Some(f), [Type(Int,List()) Var(Some(a)), Type(Int,List()) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(T
+ype(Int,List()) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })"""
     )
   }
-
 }
