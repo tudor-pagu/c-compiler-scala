@@ -1,32 +1,29 @@
 package tpagu.compiler.parser
 import tpagu.compiler.lexer.{Lexer, Token, TokenInfo}
-import tpagu.compiler.CompilerError
+import tpagu.compiler.{CompilerError, Spanned}
 import tpagu.compiler.Span
 
-// What we output must also have a span
-type Node = (AstNodeExt, Span)
+def primaryExpression: ParseRule[AstExt] = ???
 
-def primaryExpression: ParseRule[AstNodeExt] = ???
-
-def expression: ParseRule[AstNodeExt] =
+def expression: ParseRule[AstExt] =
   primaryExpression
 
 
-def unaryExpression: ParseRule[AstNodeExt] = ???
-def secondaryExpression: ParseRule[AstNodeExt] = ???
-
-def primaryExpressionMonadic: ParseRule[AstNodeExt] = {
-  for {
+def unaryExpression: ParseRule[AstExt] = ???
+def secondaryExpression: ParseRule[AstExt] = ???
+def primaryExpressionMonadic: ParseRule[AstExt] = {
+  val x = for {
     left <- secondaryExpression
     rest <- (OneOf(List(Token.Plus, Token.Minus)) <*> secondaryExpression).many
-  } yield rest.foldLeft[Either[CompilerError, AstNodeExt]](Right(left)) {
+  } yield rest.foldLeft[Either[CompilerError, AstExt]](Right(left)) {
     case (acc, (opToken, right)) => acc match
     case Left(_) => acc
     case Right(acc) => opToken.token match {
-      case Token.Plus => Right(AstNodeExt.Binary(BinaryOp.Add, acc, right))
-      case Token.Minus => Right(AstNodeExt.Binary(BinaryOp.Sub, acc, right))
+      case Token.Plus => Right(Spanned(AstExtKind.Binary(BinaryOp.Add, acc, right), Span.merge(acc.span, right.span)))
+      case Token.Minus => Right(Spanned(AstExtKind.Binary(BinaryOp.Sub, acc, right), Span.merge(acc.span, right.span)))
       case _ => Left(CompilerError("Invalid binary operation", opToken.span))
     }
 
   }
+  throw NotImplementedError("")
 }

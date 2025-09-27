@@ -15,7 +15,7 @@ case class TokenInfo(token: Token, span: Span)
 case class Empty()
 case class Accept(token: Token)
 
-class Lexer private (input: File, ind: Int) {
+class Lexer private (val input: File, val ind: Int) {
   def makeError(message: String): CompilerError =
     CompilerError(message, Span(ind, ind + 1, input))
 

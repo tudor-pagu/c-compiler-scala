@@ -1,6 +1,7 @@
 package tpagu.compiler.parser
 import tpagu.compiler.lexer.{Lexer, Token, TokenInfo}
-import tpagu.compiler.CompilerError
+import tpagu.compiler.{CompilerError, Spanned}
+import tpagu.compiler.Span
 
 type Out[A] = (A, Lexer)
 
@@ -23,7 +24,7 @@ trait ParseRule[A] {
   def repeat(range: Range): ParseRule[List[A]] =
     Repeat(this, range)
 
-  def many: ParseRule[List[A]] = 
+  def many: ParseRule[List[A]] =
     Repeat(this, 0 until Int.MaxValue)
 
   def maybe: ParseRule[Option[A]] =
@@ -40,10 +41,11 @@ trait ParseRule[A] {
     for { a <- this; _ <- that } yield Right(a)
 }
 
-case class Map[A, B](parser: ParseRule[A], f: A => Either[CompilerError,B]) extends ParseRule[B] {
+case class Map[A, B](parser: ParseRule[A], f: A => Either[CompilerError, B])
+    extends ParseRule[B] {
   def parse(lexer: Lexer): Either[CompilerError, Out[B]] =
     parser.parse(lexer) match
-      case Left(err)             => Left(err)
+      case Left(err) => Left(err)
       case Right((a, nextLexer)) => {
         f(a) match
           case Left(err) => Left(err)
@@ -148,3 +150,14 @@ case class Maybe[A](parser: ParseRule[A]) extends ParseRule[Option[A]] {
       case Left(_)                   => Right((None, lexer))
     }
 }
+
+extension [A](p: ParseRule[A])
+  def withSpan: ParseRule[Spanned[A]] =
+    new ParseRule[Spanned[A]] {
+      def parse(lexer: Lexer): Either[CompilerError, Out[Spanned[A]]] =
+        p.parse(lexer) match
+          case Left(err) => Left(err)
+          case Right((node, nextLexer)) =>
+            val span = Span(lexer.ind, nextLexer.ind, lexer.input)
+            Right((Spanned(node, span), nextLexer))
+    }
