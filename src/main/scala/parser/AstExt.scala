@@ -30,6 +30,7 @@ enum AstExtKind:
   case TranslationUnit(statements: List[AstExt])
   case ExprStatement(e: AstExt)
   case Nothing
+  case Return(e: AstExt)
 
   override def toString(): String = this match {
     case AstExtKind.IntLiteral(value)    => s"Int($value)"
@@ -61,6 +62,7 @@ enum AstExtKind:
     case AstExtKind.ExprStatement(e) =>
       s"ExprStmt(${e.toString})"
     case AstExtKind.Nothing => "Nothing"
+    case Return(e) => s"Return(${e.toString})"
   }
 
 enum TypeQualifier:

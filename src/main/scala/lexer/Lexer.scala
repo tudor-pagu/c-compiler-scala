@@ -12,6 +12,7 @@ enum Token:
   case Assign
   case EOF
   case TypeName(t: Type)
+  case Return
 
 case class TokenInfo(token: Token, span: Span)
 
@@ -90,6 +91,7 @@ class Lexer private (
     case token @ Token.Identifier(name) =>
       c match
         case i if i.isLetterOrDigit => Token.Identifier(name + i.toString)
+        case _ if name == "return" => Accept(Token.Return)
         case _ if typeTable.contains(name) =>
           Accept(Token.TypeName(typeTable(name)))
         case _ => Accept(token)
@@ -102,9 +104,9 @@ class Lexer private (
         Token.Plus | Token.Minus | Token.Times | Token.Div | Token.Comma |
         Token.Assign | Token.OpenBrace | Token.CloseBrace) =>
       Accept(t)
-    case Token.TypeName(_) =>
+    case t @ (Token.TypeName(_) | Token.Return) =>
       throw new RuntimeException(
-        "Had to transition from TypeName state in lexer, but this state should only appear immediately before accepting, so this should be unreachable."
+        s"Had to transition from state ${t} in lexer, but this state should only appear immediately before accepting, so this should be unreachable."
       )
 
     // case _ =>

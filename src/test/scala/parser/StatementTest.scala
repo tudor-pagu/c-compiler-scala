@@ -126,8 +126,27 @@ class StatementTest extends FunSuite {
         }
         """
       ),
-      """TU({ FuncDef(Type(Int,List()) Func(Some(f), [Type(Int,List()) Var(Some(a)), Type(Int,List()) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(T
-ype(Int,List()) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })"""
+      """TU({ FuncDef(Type(Int,List()) Func(Some(f), [Type(Int,List()) Var(Some(a)), Type(Int,List()) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(Type(Int,List()) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })"""
     )
   }
+  
+    test("translation unit test 2") {
+    assertEquals(
+      parseTranslationUnit(
+        """
+        int f(int a, int b) {
+            return a + b;
+        }
+        int main() {
+          int a = f(2, 3);
+          int c = a + 5;
+          return 0;
+        }
+        """
+      ),
+
+      """TU({ FuncDef(Type(Int,List()) Func(Some(f), [Type(Int,List()) Var(Some(a)), Type(Int,List()) Var(Some(b))]), Block({ Return(Add(Id(a), Id(b))); Declaration([Var(None)]) })); FuncDef(Type(Int,List()) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); Declaration([Var(Some(c)) = Add(Id(a), Int(5))]); Return(Int(0)); Declaration([Var(None)]) })) })"""
+    )
+  }
+
 }

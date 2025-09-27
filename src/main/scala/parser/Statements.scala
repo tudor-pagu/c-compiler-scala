@@ -15,7 +15,7 @@ def emptyStatement: ParseRule[AstExt] = (for {
 } yield Right(AstExtKind.Nothing)).withSpan
 
 def statement: ParseRule[AstExt] =
-  functionDefinition <|> blockStatement <|> declaration <|> expressionStatement <|> emptyStatement
+  functionDefinition <|> blockStatement <|> declaration <|> expressionStatement <|> returnStatement <|> emptyStatement
 
 def declarator: ParseRule[Declarator] =
   directDeclarator.map(decl => Right(Declarator(Nil, decl)))
@@ -114,3 +114,8 @@ def functionDefinition: ParseRule[AstExt] =
 def translationUnit: ParseRule[AstExt] =
   statement.many.map(stmts => Right(AstExtKind.TranslationUnit(stmts))).withSpan.named("translation unit")
 
+
+def returnStatement: ParseRule[AstExt] = (for {
+  _ <- Just(Token.Return)
+  e <- expression
+} yield Right(AstExtKind.Return(e))).withSpan
