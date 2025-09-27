@@ -258,4 +258,33 @@ class ParserTest extends FunSuite {
     val error = expectParseError("(2 + 3", expression)
     assert(error.message.contains("Expected") && error.message.contains("CloseParen"))
   }
+
+
+  test("simple function call") {
+    assertEquals(
+      parseExpression("a(2)"),
+      "Id(a){Call([Int(2)])}"
+    )
+  }
+
+  test("multi arg function call") {
+    assertEquals(
+      parseExpression("a(2,3, abc)"),
+      "Id(a){Call([Int(2), Int(3), Id(abc)])}"
+    )
+  }
+
+  test("function call with expression arguments") {
+    assertEquals(
+      parseExpression("a(2,3 + 4 * 2)"),
+      "Id(a){Call([Int(2), Add(Int(3), Mult(Int(4), Int(2)))])}"
+    )
+  }
+
+  test("nested function call") {
+    assertEquals(
+      parseExpression("a(2)(3)"),
+      "Id(a){Call([Int(2)])}{Call([Int(3)])}"
+    )
+  }
 }

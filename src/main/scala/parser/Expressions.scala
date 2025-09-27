@@ -62,6 +62,7 @@ def postfixOperation: ParseRule[PostfixOp] =
     _ <- Just(Token.OpenParen)
     firstArg <- primaryExpression
     args <- arg.many
+    _ <- Just(Token.CloseParen)
   } yield {
     Right(PostfixOp.FunctionCall(firstArg :: args))
   }

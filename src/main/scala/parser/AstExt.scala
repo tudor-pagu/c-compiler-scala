@@ -21,6 +21,8 @@ enum AstExtKind:
       s"${op.toString}(${left.toString}, ${right.toString})"
     case AstExtKind.PrefixOperation(op, expr) =>
       s"${op.toString}(${expr.toString})"
+    case AstExtKind.PostfixOperation(op, expr) =>
+      s"${expr.toString}{${op.toString}}"
   }
 
 enum BinaryOp:
