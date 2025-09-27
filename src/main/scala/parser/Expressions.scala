@@ -1,8 +1,11 @@
 package tpagu.compiler.parser
 import tpagu.compiler.lexer.{Lexer, Token, TokenInfo}
 import tpagu.compiler.CompilerError
+import tpagu.compiler.Span
 
-type Node = Out[AstNodeExt]
+// What we output must also have a span
+type Node = (AstNodeExt, Span)
+
 def primaryExpression: ParseRule[AstNodeExt] = ???
 
 def expression: ParseRule[AstNodeExt] =
