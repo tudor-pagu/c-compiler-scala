@@ -95,4 +95,22 @@ class StatementTest extends FunSuite {
     )
   }
 
+  test("function definition test") {
+    assertEquals(
+      parseStatement(
+        "int a(int b) { int c; }"
+      ),
+      "FuncDef(Type(Int,List()) Func(Some(a), [Type(Int,List()) Var(Some(b))]), Block({ Declaration([Var(Some(c))]) }))"
+    )
+  }
+
+  test("function definition test") {
+    assertEquals(
+      parseStatement(
+        "int a(int b) { int c; }"
+      ),
+      "FuncDef(Type(Int,List()) Func(Some(a), [Type(Int,List()) Var(Some(b))]), Block({ Declaration([Var(Some(c))]) }))"
+    )
+  }
+
 }

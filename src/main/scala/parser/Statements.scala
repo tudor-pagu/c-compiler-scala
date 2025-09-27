@@ -6,7 +6,7 @@ import tpagu.compiler.CompilerError
 import tpagu.compiler.lexer.TokenInfo
 
 def statement: ParseRule[AstExt] =
-  blockStatement <|> declaration
+  functionDefinition <|> blockStatement <|> declaration
 
 def declarator: ParseRule[Declarator] =
   directDeclarator.map(decl => Right(Declarator(Nil, decl)))
@@ -92,3 +92,12 @@ def blockStatement: ParseRule[AstExt] = (for {
   statements <- statement.many
   _ <- Just(Token.CloseBrace)
 } yield Right(AstExtKind.Block(statements))).withSpan
+
+def functionDefinition: ParseRule[AstExt] =
+  (for {
+    declSpecs <- declarationSpecifier.many
+    decl <- functionDeclarator
+    body <- blockStatement
+  } yield Right(AstExtKind.FunctionDefinition(Declaration(declSpecs, Declarator(Nil, decl)), body)))
+    .withSpan
+    .named("function definition")

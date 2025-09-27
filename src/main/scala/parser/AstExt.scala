@@ -25,6 +25,7 @@ enum AstExtKind:
   case PostfixOperation(op: PostfixOp, e: AstExt)
   case Identifier(name: String)
   case DeclarationList(declSpecifiers: List[DeclarationSpecifier], initDeclaratorList: List[(Declarator, Option[AstExt])])
+  case FunctionDefinition(declaration: Declaration, body: AstExt)
   case Block(statements: List[AstExt])
 
   override def toString(): String = this match {
@@ -49,6 +50,8 @@ enum AstExtKind:
     case AstExtKind.Block(statements) =>
       val stmtStrings = statements.map(_.toString).mkString("; ")
       s"Block({ $stmtStrings })"
+    case AstExtKind.FunctionDefinition(declaration, body) =>
+      s"FuncDef(${declaration.toString}, ${body.toString})"
   }
 
 enum TypeQualifier:
