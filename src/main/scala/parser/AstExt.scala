@@ -44,7 +44,7 @@ enum AstExtKind:
           case None           => decl.toString
         }
       }
-      s"DeclList([${declStrings.mkString(", ")}])"
+      s"Declaration([${declStrings.mkString(", ")}])"
   }
 
 enum TypeQualifier:

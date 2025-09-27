@@ -5,6 +5,9 @@ import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.CompilerError
 import tpagu.compiler.lexer.TokenInfo
 
+def statement: ParseRule[AstExt] = 
+  declaration
+
 def declarator: ParseRule[Declarator] = 
   directDeclarator.map(decl => Right(Declarator(Nil, decl)))
 
@@ -36,8 +39,9 @@ def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {
 
 def declaration: ParseRule[AstExt] =
   (for {
-    specs <- listOf(declarationSpecifier)
+    specs <- declarationSpecifier.many
     decl <- listOf(initDeclarator)
+    _ <- Just(Token.Semicolon)
   } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan
 
 def parameterDeclaration: ParseRule[Declaration] = 

@@ -177,5 +177,5 @@ extension [A](p: ParseRule[A])
 def listOf[A](p: ParseRule[A]): ParseRule[List[A]] =
   for {
     first <- p
-    rest <- (p <*> Just(Token.Comma)).many
-  } yield Right(first :: rest.map(_._1))
+    rest <- (Just(Token.Comma) <*> p).many
+  } yield Right(first :: rest.map(_._2))
