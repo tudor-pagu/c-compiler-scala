@@ -46,17 +46,27 @@ class StatementTest extends FunSuite {
     )
   }
 
-  test("function declaration1") {
+  test("function declaration2") {
     assertEquals(
       parseStatement("int a(int, int);"),
       "Declaration([Func(Some(a), [Type(Int,List()) Var(None), Type(Int,List()) Var(None)])])"
     )
   }
 
-  test("function declaration1") {
+  test("function declaration3") {
     assertEquals(
       parseStatement("int a(int(int, int c), int);"),
       "Declaration([Func(Some(a), [Type(Int,List()) Func(None, [Type(Int,List()) Var(None), Type(Int,List()) Var(Some(c))]), Type(Int,List()) Var(None)])])"
     )
   }
+
+  test("abstract function declaration") {
+    assertEquals(
+      parseStatement("int(int, int);"), // should be valid syntactically but not semantically
+      "Declaration([Func(None, [Type(Int,List()) Var(None), Type(Int,List()) Var(None)])])"
+    )
+  }
+
+
+
 }
