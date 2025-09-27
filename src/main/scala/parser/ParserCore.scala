@@ -131,6 +131,7 @@ case class Filter[A](parser: ParseRule[A], p: (A => Boolean)) extends ParseRule[
     parser.parse(lexer) match {
       case Right((value, nextLexer)) if p(value) => Right((value, nextLexer))
       case Right((value, _)) => throw RuntimeException(s"Failed to pattern match inside a withFilter used by a for comprehension of a ParseRule. This should never happen. The value you tried to filter: $value") 
+      case Left(err) => Left(err)
     }
 }
 
