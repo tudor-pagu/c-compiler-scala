@@ -97,6 +97,7 @@ class Lexer private (
     case t @ (Token.OpenParen | Token.CloseParen | Token.Semicolon | Token.EOF |
         Token.Plus | Token.Minus | Token.Times | Token.Div | Token.Comma) =>
       Accept(t)
+    case Token.TypeName(_) => throw new RuntimeException("Had to transition from TypeName state in lexer, but this state should only appear immediately before accepting, so this should be unreachable.")
 
     // case _ =>
     //   makeError(s"Received invalid character $c.")
