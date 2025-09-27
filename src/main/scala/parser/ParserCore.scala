@@ -43,6 +43,15 @@ trait ParseRule[A] {
 
   def <*[B](that: ParseRule[B]): ParseRule[A] =
     for { a <- this; _ <- that } yield Right(a)
+
+  var debugName: String = ""
+  def named(s:String): ParseRule[A] = {
+    debugName = s
+    this
+  }
+
+  override def toString: String = 
+    if debugName != "" then s"ParseRule($debugName)" else super.toString
 }
 
 case class Map[A, B](parser: ParseRule[A], f: A => Either[CompilerError, B])

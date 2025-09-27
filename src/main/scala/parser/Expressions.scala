@@ -21,7 +21,7 @@ def literal: ParseRule[AstExt] = {
         case Right(TokenInfo(_, span), _) => Left(parserError("Could not parse literal.", span))
       }
     }
-  }
+  }.named("literal")
 }
 
 def identifier: ParseRule[AstExt] = {
@@ -37,7 +37,7 @@ def identifier: ParseRule[AstExt] = {
         case Right(TokenInfo(_, span), _) => Left(parserError("Could not parse identifier.", span))
       }
     }
-  }
+  }.named("identifier")
 }
 
 // atom -> ( expr ) | literal | identifier
@@ -47,7 +47,7 @@ def atom: ParseRule[AstExt] = {
     e <- expression
     _ <- Just(Token.CloseParen)
   } yield Right(e))
-  exprParser <|> literal <|> identifier
+  (exprParser <|> literal <|> identifier).named("atom")
 }
 
 
@@ -58,14 +58,14 @@ def postfixOperation: ParseRule[PostfixOp] =
     expr <- primaryExpression
   } yield Right(expr)
 
-  for {
+  (for {
     _ <- Just(Token.OpenParen)
     firstArg <- primaryExpression
     args <- arg.many
     _ <- Just(Token.CloseParen)
   } yield {
     Right(PostfixOp.FunctionCall(firstArg :: args))
-  }
+  }).named("postfixOperation")
    
 // postfixExpression -> atom {postfixOperation}*
 def postfixExpression: ParseRule[AstExt] = 
@@ -87,12 +87,12 @@ def unaryExpression: ParseRule[AstExt] = {
     case Token.Minus => Right(AstExtKind.PrefixOperation(PrefixOp.Negation, a))
     case _           => Left(CompilerError("Invalid unary operation", op.span))
   ).withSpan
-  withPrefix <|> postfixExpression
+  (withPrefix <|> postfixExpression).named("unaryExpression")
 }
 
 // primaryExpression -> unaryExpression {[*/] unaryExpression}*
 def secondaryExpression: ParseRule[AstExt] = {
-  for {
+  (for {
     left <- unaryExpression
     rest <- (OneOf(List(Token.Times, Token.Div)) <*> unaryExpression).many
   } yield rest.foldLeft[Either[CompilerError, AstExt]](Right(left)) {
@@ -118,12 +118,12 @@ def secondaryExpression: ParseRule[AstExt] = {
             case _ =>
               Left(CompilerError("Invalid binary operation", opToken.span))
           }
-  }
+  }).named("secondaryExpression")
 }
 
 // primaryExpression -> secondaryExpression {[+-] secondaryExpression}*
 def primaryExpression: ParseRule[AstExt] = {
-  for {
+  (for {
     left <- secondaryExpression
     rest <- (OneOf(List(Token.Plus, Token.Minus)) <*> secondaryExpression).many
   } yield rest.foldLeft[Either[CompilerError, AstExt]](Right(left)) {
@@ -149,5 +149,5 @@ def primaryExpression: ParseRule[AstExt] = {
             case _ =>
               Left(CompilerError("Invalid binary operation", opToken.span))
           }
-  }
+  }).named("primaryExpression")
 }

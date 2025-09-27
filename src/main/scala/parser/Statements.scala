@@ -19,7 +19,7 @@ def typeSpecifier: ParseRule[DeclarationSpecifier] =
         case Right(TokenInfo(Token.TypeName(t), span), lexer2) => Right(DeclarationSpecifier.TSpecifier(t), lexer2)
         case Right(TokenInfo(tok, span), _) => Left(CompilerError(s"Expected type specifier, instead got: ${tok.toString}", span))
       }
-  }
+  }.named("type specifier")
 
 def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
   typeSpecifier
@@ -34,7 +34,7 @@ def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {
 
   val withoutInit = declarator.map(decl => Right((decl, None: Option[AstExt])))
   
-  withInit <|> withoutInit
+  (withInit <|> withoutInit).named("init declarator")
 }
 
 def declaration: ParseRule[AstExt] =
@@ -42,21 +42,21 @@ def declaration: ParseRule[AstExt] =
     specs <- declarationSpecifier.many
     decl <- listOf(initDeclarator)
     _ <- Just(Token.Semicolon)
-  } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan
+  } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan.named("declaration")
 
 def parameterDeclaration: ParseRule[Declaration] = 
-  for {
+  (for {
     specs <- listOf(declarationSpecifier)
     decl <- declarator
-  } yield Right(Declaration(specs, decl))
+  } yield Right(Declaration(specs, decl))).named("parameter declaration")
 
 
 def functionDeclarator: ParseRule[DirectDeclarator] = 
-  for {
+  (for {
     case AstExt(AstExtKind.Identifier(name),_) <- identifier
     _ <- Just(Token.OpenParen)
     params <- listOf(parameterDeclaration)
-  } yield Right(DirectDeclarator.Function(name, params))
+  } yield Right(DirectDeclarator.Function(name, params))).named("function declarator")
 
 def directDeclarator: ParseRule[DirectDeclarator] = 
   val paranthesizedDeclaration = for {
@@ -69,4 +69,4 @@ def directDeclarator: ParseRule[DirectDeclarator] =
     case AstExt(AstExtKind.Identifier(name),_) <- identifier
   } yield Right(DirectDeclarator.Variable(name))
   
-  variableDeclarator <|> paranthesizedDeclaration <|> functionDeclarator
+  (variableDeclarator <|> paranthesizedDeclaration <|> functionDeclarator).named("direct declarator")
