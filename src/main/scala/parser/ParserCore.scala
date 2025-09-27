@@ -12,8 +12,12 @@ trait ParseRule[A] {
   def map[B](f: A => Either[CompilerError, B]): ParseRule[B] =
     Map(this, f)
 
+  // Monad
   def flatMap[B](f: A => ParseRule[B]): ParseRule[B] =
     FlatMap(this, f)
+
+  def withFilter(p: A => Boolean): ParseRule[A] =
+    return Filter(this, p)
 
   def <|>(other: ParseRule[A]): ParseRule[A] =
     Or(this, other)
@@ -113,6 +117,14 @@ case class OneOf(expected: List[Token]) extends ParseRule[TokenInfo] {
     }
 }
 
+case class Filter[A](parser: ParseRule[A], p: (A => Boolean)) extends ParseRule[A] {
+  def parse(lexer: Lexer): Either[CompilerError, Out[A]] = 
+    parser.parse(lexer) match {
+      case Right((value, nextLexer)) if p(value) => Right((value, nextLexer))
+      case Right((value, _)) => throw RuntimeException(s"Failed to pattern match inside a withFilter used by a for comprehension of a ParseRule. This should never happen. The value you tried to filter: $value") 
+    }
+}
+
 // Repeat parser between min and max times
 case class Repeat[A](parser: ParseRule[A], range: Range)
     extends ParseRule[List[A]] {
@@ -161,3 +173,9 @@ extension [A](p: ParseRule[A])
             val span = Span(lexer.ind, nextLexer.ind, lexer.input)
             Right((Spanned(node, span), nextLexer))
     }
+
+def listOf[A](p: ParseRule[A]): ParseRule[List[A]] =
+  for {
+    first <- p
+    rest <- (p <*> Just(Token.Comma)).many
+  } yield Right(first :: rest.map(_._1))

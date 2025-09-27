@@ -57,14 +57,17 @@ enum TypeQualifier:
 
 enum DirectDeclarator:
   case Variable(name: String)
-  case Function(name: String, params: List[Declarator])
+  case Function(name: String, params: List[Declaration])
+  case InnerDeclarator(decl: Declarator)
 
   override def toString: String = this match {
     case DirectDeclarator.Variable(name) => s"Var($name)"
     case DirectDeclarator.Function(name, params) =>
       val paramStrings = params.map(_.toString).mkString(", ")
       s"Func($name, [$paramStrings])"
+    case DirectDeclarator.InnerDeclarator(decl) => s"(${decl.toString})"
   }
+
 
 case class Pointer(qualifiers: List[TypeQualifier]) {
   override def toString: String = {
