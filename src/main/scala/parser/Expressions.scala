@@ -50,7 +50,33 @@ def atom: ParseRule[AstExt] = {
   exprParser <|> literal <|> identifier
 }
 
-// unaryExpression -> [+-] atom | atom
+
+def postfixOperation: ParseRule[PostfixOp] =
+  //TODO add lexer support for ++ and -- and []
+  def arg = for {
+    _ <- Just(Token.Comma)
+    expr <- primaryExpression
+  } yield Right(expr)
+
+  for {
+    _ <- Just(Token.OpenParen)
+    firstArg <- primaryExpression
+    args <- arg.many
+  } yield {
+    Right(PostfixOp.FunctionCall(firstArg :: args))
+  }
+   
+// postfixExpression -> atom {postfixOperation}*
+def postfixExpression: ParseRule[AstExt] = 
+  for {
+    expr <- atom
+    postfixOperations <- postfixOperation.many
+  } yield postfixOperations.foldLeft[Either[CompilerError, AstExt]](Right(expr)) {
+    case (Right(acc), op) => Right(Spanned(AstExtKind.PostfixOperation(op, acc), Span.merge(acc.span, expr.span)))
+    case (Left(err), _) => Left(err)
+  }
+
+// unaryExpression -> [+-] unaryExpression | postfixExpression
 def unaryExpression: ParseRule[AstExt] = {
   val withPrefix = (for {
     op <- OneOf(List(Token.Plus, Token.Minus))
@@ -60,7 +86,7 @@ def unaryExpression: ParseRule[AstExt] = {
     case Token.Minus => Right(AstExtKind.PrefixOperation(PrefixOp.Negation, a))
     case _           => Left(CompilerError("Invalid unary operation", op.span))
   ).withSpan
-  withPrefix <|> atom
+  withPrefix <|> postfixExpression
 }
 
 // primaryExpression -> unaryExpression {[*/] unaryExpression}*

@@ -6,7 +6,7 @@ enum Token:
   case Number(value: String)
   case OpenParen
   case CloseParen
-  case Semicolon
+  case Semicolon, Comma
   case Plus, Minus, Times, Div
   case EOF
 
@@ -64,6 +64,7 @@ class Lexer private (val input: File, val ind: Int) {
         case '('                 => Token.OpenParen
         case ')'                 => Token.CloseParen
         case ';'                 => Token.Semicolon
+        case ','                 => Token.Comma
         case '+'                 => Token.Plus
         case '-'                 => Token.Minus
         case '*'                 => Token.Times
@@ -81,7 +82,7 @@ class Lexer private (val input: File, val ind: Int) {
         case d if d.isDigit => Token.Number(value + d.toString)
         case _              => Accept(token)
     case t @ (Token.OpenParen | Token.CloseParen | Token.Semicolon | Token.EOF |
-        Token.Plus | Token.Minus | Token.Times | Token.Div) =>
+        Token.Plus | Token.Minus | Token.Times | Token.Div | Token.Comma) =>
       Accept(t)
 
     // case _ =>
