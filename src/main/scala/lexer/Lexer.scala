@@ -9,6 +9,7 @@ enum Token:
   case CloseParen
   case Semicolon, Comma
   case Plus, Minus, Times, Div
+  case Assign
   case EOF
   case TypeName(t: Type)
 
@@ -79,6 +80,7 @@ class Lexer private (
         case '-'                 => Token.Minus
         case '*'                 => Token.Times
         case '/'                 => Token.Div
+        case '='                 => Token.Assign
         case d if d.isDigit      => Token.Number(d.toString)
         case i if i.isLetter     => Token.Identifier(i.toString)
         case _ if c.isWhitespace => Empty()
@@ -95,7 +97,7 @@ class Lexer private (
         case d if d.isDigit => Token.Number(value + d.toString)
         case _              => Accept(token)
     case t @ (Token.OpenParen | Token.CloseParen | Token.Semicolon | Token.EOF |
-        Token.Plus | Token.Minus | Token.Times | Token.Div | Token.Comma) =>
+        Token.Plus | Token.Minus | Token.Times | Token.Div | Token.Comma | Token.Assign) =>
       Accept(t)
     case Token.TypeName(_) => throw new RuntimeException("Had to transition from TypeName state in lexer, but this state should only appear immediately before accepting, so this should be unreachable.")
 

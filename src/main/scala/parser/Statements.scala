@@ -22,7 +22,17 @@ def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
   typeSpecifier
 }
 
-def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = ???
+def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {
+  val withInit = for {
+    decl <- declarator
+    _ <- Just(Token.Assign)
+    init <- expression
+  } yield Right((decl, Some(init): Option[AstExt]))
+
+  val withoutInit = declarator.map(decl => Right((decl, None: Option[AstExt])))
+  
+  withInit <|> withoutInit
+}
 
 def declaration: ParseRule[AstExt] =
   (for {
