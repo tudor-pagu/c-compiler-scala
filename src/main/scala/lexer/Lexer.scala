@@ -1,6 +1,6 @@
 package tpagu.compiler.lexer
 import tpagu.compiler.{CompilerError, Span, File}
-import tpagu.compiler.parser.Declaration
+import tpagu.compiler.parser.{Declaration, Type, TypeKind}
 
 enum Token:
   case Identifier(name: String)
@@ -10,17 +10,22 @@ enum Token:
   case Semicolon, Comma
   case Plus, Minus, Times, Div
   case EOF
-  case Type
+  case TypeName(t: Type)
 
 case class TokenInfo(token: Token, span: Span)
 
 case class Empty()
 case class Accept(token: Token)
 
-val builtinTypeTable = Map(
-  "int" -> Declaration(Nil, DirectDeclarator.)
+val builtinTypeTable: Map[String, Type] = Map(
+  "int" -> Type(TypeKind.Int, Nil)
 )
-class Lexer private (val input: File, val ind: Int, typeTable: Map[String, Declaration]) {
+
+class Lexer private (
+    val input: File,
+    val ind: Int,
+    typeTable: Map[String, Type] = builtinTypeTable
+) {
   def makeError(message: String): CompilerError =
     CompilerError(message, Span(ind, ind + 1, input))
 
@@ -81,7 +86,10 @@ class Lexer private (val input: File, val ind: Int, typeTable: Map[String, Decla
     case token @ Token.Identifier(name) =>
       c match
         case i if i.isLetterOrDigit => Token.Identifier(name + i.toString)
-        case _                      => Accept(token)
+        case _ if typeTable.contains(name) =>
+          Accept(Token.TypeName(typeTable(name)))
+        case _ => Accept(token)
+
     case token @ Token.Number(value) =>
       c match
         case d if d.isDigit => Token.Number(value + d.toString)

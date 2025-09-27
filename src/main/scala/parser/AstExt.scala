@@ -84,10 +84,10 @@ case class Declarator(pointers: List[Pointer], direct: DirectDeclarator) {
 }
 
 enum DeclarationSpecifier:
-  case TSpecifier(name: String) // e.g. int, char, struct, Foo
+  case TSpecifier(t: Type) // e.g. int, char, struct, Foo
   case TQualifier(qualifier: TypeQualifier) // e.g. const, volatile
   override def toString: String = this match {
-    case DeclarationSpecifier.TSpecifier(name) => name
+    case DeclarationSpecifier.TSpecifier(t) => t.toString
     case DeclarationSpecifier.TQualifier(q)    => q.toString
   }
 
@@ -128,3 +128,14 @@ enum PostfixOp:
       val argStrings = args.map(_.toString).mkString(", ")
       s"Call([$argStrings])"
   }
+
+
+enum TypeKind:
+  case Int
+  case Function(returnType: Type, paramTypes: List[Type])
+  case Array(elementType: Type, size: Int)
+  case Pointer(to: Type)
+
+
+case class Type(baseType: TypeKind, qualifiers: List[TypeQualifier])
+
