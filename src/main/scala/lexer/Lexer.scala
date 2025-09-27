@@ -24,7 +24,6 @@ class Lexer private (val input: File, val ind: Int) {
 
   def this(input: File) = this(input, 0)
   def nextToken(): Either[CompilerError, (TokenInfo, Lexer)] = {
-    println(s"tpagu debug $ind");
 
     var currentState: Empty | Token = Empty();
     var i = ind

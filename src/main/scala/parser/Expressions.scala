@@ -50,23 +50,24 @@ def atom: ParseRule[AstExt] = {
   exprParser <|> literal <|> identifier
 }
 
-// unaryExpression -> [+-] atom
+// unaryExpression -> [+-] atom | atom
 def unaryExpression: ParseRule[AstExt] = {
-  (for {
+  val withPrefix = (for {
     op <- OneOf(List(Token.Plus, Token.Minus))
-    a <- atom
+    a <- unaryExpression
   } yield op.token match
     case Token.Plus  => Right(AstExtKind.Unary(UnaryOp.UnaryPlus, a))
     case Token.Minus => Right(AstExtKind.Unary(UnaryOp.Negation, a))
     case _           => Left(CompilerError("Invalid unary operation", op.span))
   ).withSpan
+  withPrefix <|> atom
 }
 
 // primaryExpression -> unaryExpression {[*/] unaryExpression}*
 def secondaryExpression: ParseRule[AstExt] = {
   for {
-    left <- secondaryExpression
-    rest <- (OneOf(List(Token.Plus, Token.Minus)) <*> secondaryExpression).many
+    left <- unaryExpression
+    rest <- (OneOf(List(Token.Times, Token.Div)) <*> unaryExpression).many
   } yield rest.foldLeft[Either[CompilerError, AstExt]](Right(left)) {
     case (acc, (opToken, right)) =>
       acc match

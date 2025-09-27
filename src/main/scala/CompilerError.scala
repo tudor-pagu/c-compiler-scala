@@ -2,9 +2,11 @@ package tpagu.compiler
 
 class File(val name: String, val contents: String)
 
-class Span(val start: Int, val end: Int, val file:File)
+class Span(val start: Int, val end: Int, val file: File)
 
-case class Spanned[A](node: A, span: Span)
+case class Spanned[A](node: A, span: Span) {
+  override def toString(): String = node.toString
+}
 
 object Span {
   val empty = Span(0, 0, File("<unknown>", ""))
@@ -18,6 +20,7 @@ object Span {
   }
 }
 
-class CompilerError(val message : String, val span: Span) {
-  override def toString: String = s"Error at ${span.start}-${span.end}: $message"
+class CompilerError(val message: String, val span: Span) {
+  override def toString: String =
+    s"Error at ${span.start}-${span.end}: $message"
 }
