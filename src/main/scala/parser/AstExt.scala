@@ -7,7 +7,7 @@ type AstExt = Spanned[AstExtKind]
 
 case class Declaration(
     declarationSpecifiers: List[DeclarationSpecifier],
-    declarator: Option[Declarator] // declarator can be absent in abstract declarators (e.g. "int" by itself)
+    declarator: Declarator
 ) {
 
   override def toString(): String = {
@@ -56,8 +56,8 @@ enum TypeQualifier:
   }
 
 enum DirectDeclarator:
-  case Variable(name: String)
-  case Function(name: String, params: List[Declaration])
+  case Variable(name: Option[String])  // declarator can be absent in abstract declarators (e.g. "int" by itself)
+  case Function(name: Option[String], params: List[Declaration]) 
   case InnerDeclarator(decl: Declarator)
 
   override def toString: String = this match {

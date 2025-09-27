@@ -47,17 +47,19 @@ def declaration: ParseRule[AstExt] =
 def parameterDeclaration: ParseRule[Declaration] = 
   (for {
     specs <- declarationSpecifier.many
-    decl <- declarator.maybe
+    decl <- declarator
   } yield Right(Declaration(specs, decl))).named("parameter declaration")
 
 
+def extractName(nameOpt:Option[AstExt]):Option[String] = nameOpt.map{case AstExt(AstExtKind.Identifier(x), _) => x}
 def functionDeclarator: ParseRule[DirectDeclarator] = 
   (for {
-    case AstExt(AstExtKind.Identifier(name),_) <- identifier
+   // case AstExt(AstExtKind.Identifier(name),_) <- identifier.maybe
+    name <- identifier.maybe
     _ <- Just(Token.OpenParen)
     params <- listOf(parameterDeclaration)
     _ <- Just(Token.CloseParen)
-  } yield Right(DirectDeclarator.Function(name, params))).named("function declarator")
+  } yield Right(DirectDeclarator.Function(extractName(name), params))).named("function declarator")
 
 def directDeclarator: ParseRule[DirectDeclarator] = 
   val paranthesizedDeclaration = for {
@@ -67,7 +69,7 @@ def directDeclarator: ParseRule[DirectDeclarator] =
   } yield Right(DirectDeclarator.InnerDeclarator(d))
 
   val variableDeclarator = for {
-    case AstExt(AstExtKind.Identifier(name),_) <- identifier
-  } yield Right(DirectDeclarator.Variable(name))
+    case name <- identifier.maybe
+  } yield Right(DirectDeclarator.Variable(extractName(name)))
   
   (functionDeclarator <|> variableDeclarator <|> paranthesizedDeclaration).named("direct declarator")
