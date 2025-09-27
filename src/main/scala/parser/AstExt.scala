@@ -4,6 +4,18 @@ import tpagu.compiler.Spanned
 type AstExt = Spanned[AstExtKind]
 // Extended Ast
 // (as parsed directly from the grammar, before desugaring)
+
+case class Declaration(
+    declarationSpecifiers: List[DeclarationSpecifier],
+    declarator: Declarator
+) {
+
+  override def toString(): String = {
+    val specs = declarationSpecifiers.map(_.toString).mkString(" ")
+    s"$specs ${declarator.toString}"
+  }
+}
+
 enum AstExtKind:
   case IntLiteral(value: Int)
   case StringLiteral(value: String)
@@ -12,6 +24,8 @@ enum AstExtKind:
   case PrefixOperation(op: PrefixOp, e: AstExt)
   case PostfixOperation(op: PostfixOp, e: AstExt)
   case Identifier(name: String)
+  case DeclarationList(initDeclaratorList: List[(Declaration, Option[AstExt])])
+
   override def toString(): String = this match {
     case AstExtKind.IntLiteral(value)    => s"Int($value)"
     case AstExtKind.StringLiteral(value) => s"String(\"$value\")"
@@ -23,6 +37,55 @@ enum AstExtKind:
       s"${op.toString}(${expr.toString})"
     case AstExtKind.PostfixOperation(op, expr) =>
       s"${expr.toString}{${op.toString}}"
+    case AstExtKind.DeclarationList(decls) =>
+      val declStrings = decls.map { case (decl, init) =>
+        init match {
+          case Some(initExpr) => s"${decl.toString} = ${initExpr.toString}"
+          case None           => decl.toString
+        }
+      }
+      s"DeclList([${declStrings.mkString(", ")}])"
+  }
+
+enum TypeQualifier:
+  case Const
+  case Volatile
+  override def toString: String = this match {
+    case TypeQualifier.Const    => "const"
+    case TypeQualifier.Volatile => "volatile"
+  }
+
+enum DirectDeclarator:
+  case Variable(name: String)
+  case Function(name: String, params: List[Declarator])
+
+  override def toString: String = this match {
+    case DirectDeclarator.Variable(name) => s"Var($name)"
+    case DirectDeclarator.Function(name, params) =>
+      val paramStrings = params.map(_.toString).mkString(", ")
+      s"Func($name, [$paramStrings])"
+  }
+
+case class Pointer(qualifiers: List[TypeQualifier]) {
+  override def toString: String = {
+    val quals = if (qualifiers.isEmpty) "" else qualifiers.map(_.toString).mkString(" ") + " "
+    s"* $quals"
+  }
+}
+
+case class Declarator(pointers: List[Pointer], direct: DirectDeclarator) {
+  override def toString: String = {
+    val ptrs = pointers.map(_.toString).mkString(" ")
+    s"$ptrs${direct.toString}"
+  }
+}
+
+enum DeclarationSpecifier:
+  case TSpecifier(name: String) // e.g. int, char, struct, Foo
+  case TQualifier(qualifier: TypeQualifier) // e.g. const, volatile
+  override def toString: String = this match {
+    case DeclarationSpecifier.TSpecifier(name) => name
+    case DeclarationSpecifier.TQualifier(q)    => q.toString
   }
 
 enum BinaryOp:
