@@ -56,8 +56,8 @@ def unaryExpression: ParseRule[AstExt] = {
     op <- OneOf(List(Token.Plus, Token.Minus))
     a <- unaryExpression
   } yield op.token match
-    case Token.Plus  => Right(AstExtKind.Unary(UnaryOp.UnaryPlus, a))
-    case Token.Minus => Right(AstExtKind.Unary(UnaryOp.Negation, a))
+    case Token.Plus  => Right(AstExtKind.PrefixOperation(PrefixOp.UnaryPlus, a))
+    case Token.Minus => Right(AstExtKind.PrefixOperation(PrefixOp.Negation, a))
     case _           => Left(CompilerError("Invalid unary operation", op.span))
   ).withSpan
   withPrefix <|> atom
