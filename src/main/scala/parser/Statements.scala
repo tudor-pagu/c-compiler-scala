@@ -1,12 +1,32 @@
 package tpagu.compiler.parser
 
 import tpagu.compiler.lexer.Token
+import tpagu.compiler.lexer.Lexer
+import tpagu.compiler.CompilerError
 
 def declarator: ParseRule[Declarator] = ???
   //directDeclarator
 
+def typeSpecifier: ParseRule[DeclarationSpecifier] = 
+  new ParseRule[DeclarationSpecifier] {
+    def parse(lexer: Lexer): Either[CompilerError, Out[DeclarationSpecifier]] = 
+      lexer.nextToken() match {
+        case Left(err) => Left(err)
+        case Right((Token.Type, lexer))
 
-def parameterDeclaration: ParseRule[Declaration] = ???
+      }
+  }
+
+def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
+  typeSpecifier
+}
+
+def parameterDeclaration: ParseRule[Declaration] = 
+  for {
+    specs <- listOf(declarationSpecifier)
+    decl <- declarator
+  } yield Right(Declaration(specs, decl))
+
 
 def functionDeclarator: ParseRule[DirectDeclarator] = 
   for {
@@ -26,6 +46,4 @@ def directDeclarator: ParseRule[DirectDeclarator] =
     case AstExt(AstExtKind.Identifier(name),_) <- identifier
   } yield Right(DirectDeclarator.Variable(name))
   
-  throw new NotImplementedError()
-
   variableDeclarator <|> paranthesizedDeclaration <|> functionDeclarator
