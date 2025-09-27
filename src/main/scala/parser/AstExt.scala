@@ -1,3 +1,6 @@
+package tpagu.compiler.parser
+
+
 // Extended Ast 
 // (as parsed directly from the grammar, before desugaring)
 enum AstNodeExt:

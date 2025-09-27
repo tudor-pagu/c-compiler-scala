@@ -1,3 +1,6 @@
+package tpagu.compiler.lexer
+import tpagu.compiler.{CompilerError, Span, File}
+
 enum Token:
   case Identifier(name: String)
   case Number(value: String)

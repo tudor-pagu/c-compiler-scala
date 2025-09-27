@@ -1,3 +1,5 @@
+package tpagu.compiler
+
 class File(val name: String, val contents: String)
 
 class Span(val start: Int, val end: Int, val file:File)

@@ -1,10 +1,14 @@
+package tpagu.compiler.parser
+import tpagu.compiler.lexer.{Lexer, Token, TokenInfo}
+import tpagu.compiler.CompilerError
+
 type Out[A] = (A, Lexer)
 
 trait ParseRule[A] {
   def parse(lexer: Lexer): Either[CompilerError, Out[A]]
 
   // Functor
-  def map[B](f: A => B): ParseRule[B] =
+  def map[B](f: A => Either[CompilerError, B]): ParseRule[B] =
     Map(this, f)
 
   def flatMap[B](f: A => ParseRule[B]): ParseRule[B] =
@@ -19,15 +23,32 @@ trait ParseRule[A] {
   def repeat(range: Range): ParseRule[List[A]] =
     Repeat(this, range)
 
+  def many: ParseRule[List[A]] = 
+    Repeat(this, 0 until Int.MaxValue)
+
   def maybe: ParseRule[Option[A]] =
     Maybe(this)
+
+  // Applicative operators
+  def <*>[B](that: ParseRule[B]): ParseRule[(A, B)] =
+    for { a <- this; b <- that } yield Right((a, b))
+
+  def *>[B](that: ParseRule[B]): ParseRule[B] =
+    for { _ <- this; b <- that } yield Right(b)
+
+  def <*[B](that: ParseRule[B]): ParseRule[A] =
+    for { a <- this; _ <- that } yield Right(a)
 }
 
-case class Map[A, B](parser: ParseRule[A], f: A => B) extends ParseRule[B] {
+case class Map[A, B](parser: ParseRule[A], f: A => Either[CompilerError,B]) extends ParseRule[B] {
   def parse(lexer: Lexer): Either[CompilerError, Out[B]] =
     parser.parse(lexer) match
       case Left(err)             => Left(err)
-      case Right((a, nextLexer)) => Right((f(a), nextLexer))
+      case Right((a, nextLexer)) => {
+        f(a) match
+          case Left(err) => Left(err)
+          case Right(v)  => Right((v, nextLexer))
+      }
 }
 
 case class FlatMap[A, B](parser: ParseRule[A], f: A => ParseRule[B])
@@ -127,6 +148,3 @@ case class Maybe[A](parser: ParseRule[A]) extends ParseRule[Option[A]] {
       case Left(_)                   => Right((None, lexer))
     }
 }
-
-
-
