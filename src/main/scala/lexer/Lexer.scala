@@ -5,8 +5,8 @@ import tpagu.compiler.parser.{Declaration, Type, TypeKind}
 enum Token:
   case Identifier(name: String)
   case Number(value: String)
-  case OpenParen
-  case CloseParen
+  case OpenParen, CloseParen
+  case OpenBrace, CloseBrace
   case Semicolon, Comma
   case Plus, Minus, Times, Div
   case Assign
@@ -81,6 +81,8 @@ class Lexer private (
         case '*'                 => Token.Times
         case '/'                 => Token.Div
         case '='                 => Token.Assign
+        case '{'                 => Token.OpenBrace
+        case '}'                 => Token.CloseBrace
         case d if d.isDigit      => Token.Number(d.toString)
         case i if i.isLetter     => Token.Identifier(i.toString)
         case _ if c.isWhitespace => Empty()
@@ -97,9 +99,13 @@ class Lexer private (
         case d if d.isDigit => Token.Number(value + d.toString)
         case _              => Accept(token)
     case t @ (Token.OpenParen | Token.CloseParen | Token.Semicolon | Token.EOF |
-        Token.Plus | Token.Minus | Token.Times | Token.Div | Token.Comma | Token.Assign) =>
+        Token.Plus | Token.Minus | Token.Times | Token.Div | Token.Comma |
+        Token.Assign | Token.OpenBrace | Token.CloseBrace) =>
       Accept(t)
-    case Token.TypeName(_) => throw new RuntimeException("Had to transition from TypeName state in lexer, but this state should only appear immediately before accepting, so this should be unreachable.")
+    case Token.TypeName(_) =>
+      throw new RuntimeException(
+        "Had to transition from TypeName state in lexer, but this state should only appear immediately before accepting, so this should be unreachable."
+      )
 
     // case _ =>
     //   makeError(s"Received invalid character $c.")

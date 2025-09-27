@@ -25,6 +25,7 @@ enum AstExtKind:
   case PostfixOperation(op: PostfixOp, e: AstExt)
   case Identifier(name: String)
   case DeclarationList(declSpecifiers: List[DeclarationSpecifier], initDeclaratorList: List[(Declarator, Option[AstExt])])
+  case Block(statements: List[AstExt])
 
   override def toString(): String = this match {
     case AstExtKind.IntLiteral(value)    => s"Int($value)"
@@ -45,6 +46,9 @@ enum AstExtKind:
         }
       }
       s"Declaration([${declStrings.mkString(", ")}])"
+    case AstExtKind.Block(statements) =>
+      val stmtStrings = statements.map(_.toString).mkString("; ")
+      s"Block({ $stmtStrings })"
   }
 
 enum TypeQualifier:

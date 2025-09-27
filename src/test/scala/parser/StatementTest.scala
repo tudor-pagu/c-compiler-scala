@@ -8,7 +8,7 @@ class StatementTest extends FunSuite {
   // Helper methods
   def parseStatement(input: String): String = {
     val lexer = new Lexer(new File("test.txt", input))
-    declaration.parse(lexer) match {
+    statement.parse(lexer) match {
       case Left(err)       => fail(s"Could not parse expression: $err")
       case Right((ast, _)) => ast.toString()
     }
@@ -19,7 +19,7 @@ class StatementTest extends FunSuite {
       parser: ParseRule[AstExt]
   ): CompilerError = {
     val lexer = new Lexer(new File("test.txt", input))
-    declaration.parse(lexer) match {
+    statement.parse(lexer) match {
       case Left(err) => err
       case Right(_)  => fail(s"Expected parse error for input: $input")
     }
@@ -62,11 +62,37 @@ class StatementTest extends FunSuite {
 
   test("abstract function declaration") {
     assertEquals(
-      parseStatement("int(int, int);"), // should be valid syntactically but not semantically
+      parseStatement(
+        "int(int, int);"
+      ), // should be valid syntactically but not semantically
       "Declaration([Func(None, [Type(Int,List()) Var(None), Type(Int,List()) Var(None)])])"
     )
   }
 
-
+  test("block test 1") {
+    assertEquals(
+      parseStatement(
+        "{int a; int b;}"
+      ),
+      "Block({ Declaration([Var(Some(a))]); Declaration([Var(Some(b))]) })"
+    )
+  }
+  test("block test 2") {
+    assertEquals(
+      parseStatement(
+        "{}"
+      ),
+      "Block({  })"
+    )
+  }
+  
+  test("block test 3") {
+    assertEquals(
+      parseStatement(
+        "{int a;}"
+      ),
+      "Block({ Declaration([Var(Some(a))]) })"
+    )
+  }
 
 }

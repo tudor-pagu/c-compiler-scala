@@ -5,19 +5,26 @@ import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.CompilerError
 import tpagu.compiler.lexer.TokenInfo
 
-def statement: ParseRule[AstExt] = 
-  declaration
+def statement: ParseRule[AstExt] =
+  blockStatement <|> declaration
 
-def declarator: ParseRule[Declarator] = 
+def declarator: ParseRule[Declarator] =
   directDeclarator.map(decl => Right(Declarator(Nil, decl)))
 
-def typeSpecifier: ParseRule[DeclarationSpecifier] = 
+def typeSpecifier: ParseRule[DeclarationSpecifier] =
   new ParseRule[DeclarationSpecifier] {
-    def parse(lexer: Lexer): Either[CompilerError, Out[DeclarationSpecifier]] = 
+    def parse(lexer: Lexer): Either[CompilerError, Out[DeclarationSpecifier]] =
       lexer.nextToken() match {
         case Left(err) => Left(err)
-        case Right(TokenInfo(Token.TypeName(t), span), lexer2) => Right(DeclarationSpecifier.TSpecifier(t), lexer2)
-        case Right(TokenInfo(tok, span), _) => Left(CompilerError(s"Expected type specifier, instead got: ${tok.toString}", span))
+        case Right(TokenInfo(Token.TypeName(t), span), lexer2) =>
+          Right(DeclarationSpecifier.TSpecifier(t), lexer2)
+        case Right(TokenInfo(tok, span), _) =>
+          Left(
+            CompilerError(
+              s"Expected type specifier, instead got: ${tok.toString}",
+              span
+            )
+          )
       }
   }.named("type specifier")
 
@@ -33,7 +40,7 @@ def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {
   } yield Right((decl, Some(init): Option[AstExt]))
 
   val withoutInit = declarator.map(decl => Right((decl, None: Option[AstExt])))
-  
+
   (withInit <|> withoutInit).named("init declarator")
 }
 
@@ -42,26 +49,31 @@ def declaration: ParseRule[AstExt] =
     specs <- declarationSpecifier.many
     decl <- listOf(initDeclarator)
     _ <- Just(Token.Semicolon)
-  } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan.named("declaration")
+  } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan
+    .named("declaration")
 
-def parameterDeclaration: ParseRule[Declaration] = 
+def parameterDeclaration: ParseRule[Declaration] =
   (for {
     specs <- declarationSpecifier.many
     decl <- declarator
   } yield Right(Declaration(specs, decl))).named("parameter declaration")
 
+def extractName(nameOpt: Option[AstExt]): Option[String] = nameOpt.map {
+  case AstExt(AstExtKind.Identifier(x), _) => x
+  case _                                   => ???
+}
 
-def extractName(nameOpt:Option[AstExt]):Option[String] = nameOpt.map{case AstExt(AstExtKind.Identifier(x), _) => x}
-def functionDeclarator: ParseRule[DirectDeclarator] = 
+def functionDeclarator: ParseRule[DirectDeclarator] =
   (for {
-   // case AstExt(AstExtKind.Identifier(name),_) <- identifier.maybe
+    // case AstExt(AstExtKind.Identifier(name),_) <- identifier.maybe
     name <- identifier.maybe
     _ <- Just(Token.OpenParen)
     params <- listOf(parameterDeclaration)
     _ <- Just(Token.CloseParen)
-  } yield Right(DirectDeclarator.Function(extractName(name), params))).named("function declarator")
+  } yield Right(DirectDeclarator.Function(extractName(name), params)))
+    .named("function declarator")
 
-def directDeclarator: ParseRule[DirectDeclarator] = 
+def directDeclarator: ParseRule[DirectDeclarator] =
   val paranthesizedDeclaration = for {
     _ <- Just(Token.OpenParen)
     d <- declarator
@@ -71,5 +83,12 @@ def directDeclarator: ParseRule[DirectDeclarator] =
   val variableDeclarator = for {
     case name <- identifier.maybe
   } yield Right(DirectDeclarator.Variable(extractName(name)))
-  
-  (functionDeclarator <|> variableDeclarator <|> paranthesizedDeclaration).named("direct declarator")
+
+  (functionDeclarator <|> variableDeclarator <|> paranthesizedDeclaration)
+    .named("direct declarator")
+
+def blockStatement: ParseRule[AstExt] = (for {
+  _ <- Just(Token.OpenBrace)
+  statements <- statement.many
+  _ <- Just(Token.CloseBrace)
+} yield Right(AstExtKind.Block(statements))).withSpan
