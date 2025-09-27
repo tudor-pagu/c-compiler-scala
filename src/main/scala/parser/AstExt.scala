@@ -24,7 +24,7 @@ enum AstExtKind:
   case PrefixOperation(op: PrefixOp, e: AstExt)
   case PostfixOperation(op: PostfixOp, e: AstExt)
   case Identifier(name: String)
-  case DeclarationList(initDeclaratorList: List[(Declaration, Option[AstExt])])
+  case DeclarationList(declSpecifiers: List[DeclarationSpecifier], initDeclaratorList: List[(Declarator, Option[AstExt])])
 
   override def toString(): String = this match {
     case AstExtKind.IntLiteral(value)    => s"Int($value)"
@@ -37,7 +37,7 @@ enum AstExtKind:
       s"${op.toString}(${expr.toString})"
     case AstExtKind.PostfixOperation(op, expr) =>
       s"${expr.toString}{${op.toString}}"
-    case AstExtKind.DeclarationList(decls) =>
+    case AstExtKind.DeclarationList(declSpecifiers, decls) =>
       val declStrings = decls.map { case (decl, init) =>
         init match {
           case Some(initExpr) => s"${decl.toString} = ${initExpr.toString}"

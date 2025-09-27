@@ -5,8 +5,8 @@ import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.CompilerError
 import tpagu.compiler.lexer.TokenInfo
 
-def declarator: ParseRule[Declarator] = ???
-  //directDeclarator
+def declarator: ParseRule[Declarator] = 
+  directDeclarator.map(decl => Right(Declarator(Nil, decl)))
 
 def typeSpecifier: ParseRule[DeclarationSpecifier] = 
   new ParseRule[DeclarationSpecifier] {
@@ -21,6 +21,14 @@ def typeSpecifier: ParseRule[DeclarationSpecifier] =
 def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
   typeSpecifier
 }
+
+def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = ???
+
+def declaration: ParseRule[AstExt] =
+  (for {
+    specs <- listOf(declarationSpecifier)
+    decl <- listOf(initDeclarator)
+  } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan
 
 def parameterDeclaration: ParseRule[Declaration] = 
   for {
