@@ -7,7 +7,7 @@ type AstExt = Spanned[AstExtKind]
 
 case class Declaration(
     declarationSpecifiers: List[DeclarationSpecifier],
-    declarator: Declarator
+    declarator: Option[Declarator] // declarator can be absent in abstract declarators (e.g. "int" by itself)
 ) {
 
   override def toString(): String = {

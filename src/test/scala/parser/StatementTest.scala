@@ -24,9 +24,20 @@ class StatementTest extends FunSuite {
   }
   
   
-  // Literal parser tests
   test("parse simple integer literal") {
     assertEquals(parseStatement("int a = 2;"), "Declaration([Var(a) = Int(2)])")
+  }
+  
+  test("parse simple integer literal") {
+    assertEquals(parseStatement("int a = 2, b = 3;"), "Declaration([Var(a) = Int(2), Var(b) = Int(3)])")
+  }
+
+  test("function declaration1") {
+    assertEquals(parseStatement("int a(int b, int c);"), "Declaration([Func(a, [Type(Int,List()) Some(Var(b)), Type(Int,List()) Some(Var(c))])])")
+  }
+
+  test("function declaration1") {
+    assertEquals(parseStatement("int a(int, int);"), "Declaration([Func(a, [Type(Int,List()) None, Type(Int,List()) None])])")
   }
 }
 

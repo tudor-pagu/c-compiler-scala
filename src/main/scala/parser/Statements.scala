@@ -46,8 +46,8 @@ def declaration: ParseRule[AstExt] =
 
 def parameterDeclaration: ParseRule[Declaration] = 
   (for {
-    specs <- listOf(declarationSpecifier)
-    decl <- declarator
+    specs <- declarationSpecifier.many
+    decl <- declarator.maybe
   } yield Right(Declaration(specs, decl))).named("parameter declaration")
 
 
@@ -56,6 +56,7 @@ def functionDeclarator: ParseRule[DirectDeclarator] =
     case AstExt(AstExtKind.Identifier(name),_) <- identifier
     _ <- Just(Token.OpenParen)
     params <- listOf(parameterDeclaration)
+    _ <- Just(Token.CloseParen)
   } yield Right(DirectDeclarator.Function(name, params))).named("function declarator")
 
 def directDeclarator: ParseRule[DirectDeclarator] = 
@@ -69,4 +70,4 @@ def directDeclarator: ParseRule[DirectDeclarator] =
     case AstExt(AstExtKind.Identifier(name),_) <- identifier
   } yield Right(DirectDeclarator.Variable(name))
   
-  (variableDeclarator <|> paranthesizedDeclaration <|> functionDeclarator).named("direct declarator")
+  (functionDeclarator <|> variableDeclarator <|> paranthesizedDeclaration).named("direct declarator")
