@@ -99,7 +99,7 @@ class StatementTest extends FunSuite {
         }
         """
       ),
-      """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(NumT(4,true) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })"""
+      """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(NumT(4,true) Func(Some(main), []), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })"""
     )
   }
 
@@ -117,7 +117,7 @@ class StatementTest extends FunSuite {
         }
         """
       ),
-      """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ Return(Add(Id(a), Id(b))); Declaration([Var(None)]) })); FuncDef(NumT(4,true) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); Declaration([Var(Some(c)) = Add(Id(a), Int(5))]); Return(Int(0)); Declaration([Var(None)]) })) })"""
+      """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ Return(Add(Id(a), Id(b))); Declaration([Var(None)]) })); FuncDef(NumT(4,true) Func(Some(main), []), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); Declaration([Var(Some(c)) = Add(Id(a), Int(5))]); Return(Int(0)); Declaration([Var(None)]) })) })"""
     )
   }
 

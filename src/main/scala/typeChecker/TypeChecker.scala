@@ -117,14 +117,15 @@ object TypeCheck {
           )
         )
         declarationType match {
-          case FunT(_, _) => {}
+          case func@FunT(_, _) => {}
           case t =>
             throw createError(
               s"Expected function type in function declaration, but got ${t}. This is probably a bug in the parser.",
               e.span
             )
         }
-        val newNv = nv + (name -> declarationType)
+        println(s"tpagu debug fun: adding name $name -> $declarationType to nv")
+        val newNv = nv + (name -> declarationType) ++ getParameterMappings(declaration)
         val bodyT = typeOf(body, newNv)
         (NoneT(), newNv)
       }
@@ -170,11 +171,7 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit span: Span)
     case TSpecifier(t) => t
     case _ => throw RuntimeException("Unreachable code!")
   }
-  val x = l.headOption;
-  println(s"tpagu debug x = $x")
-  x.getOrElse(throw RuntimeException("aaaa"))
-
-  //.headOption.getOrElse({println("tpagu bad"); throw createError("No valid type specifier found in declaration.",span);})
+  l.headOption.getOrElse({println("tpagu bad"); throw createError("No valid type specifier found in declaration.",span);})
 
 def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type = getTypeOfDeclaration(
   declaration.declarationSpecifiers,
@@ -202,3 +199,15 @@ def getNameOfDeclarator(declarator: Declarator): Option[String] =
     case DirectDeclarator.Function(name, _)     => name
     case DirectDeclarator.InnerDeclarator(decl) => getNameOfDeclarator(decl)
   }
+
+def getParameterMappings(f: Declaration)(implicit span: Span): Map[String, Type] = f.declarator.direct match {
+  case DirectDeclarator.Function(name, params) => {
+    val x = params
+      .filter(decl => decl.declarator.direct.getName().isDefined)
+      .map(decl => (decl.declarator.direct.getName()
+      .getOrElse(throw new RuntimeException("impossible")), getTypeOfDeclaration(decl)))
+    x.toMap
+  }
+  case _ => throw new RuntimeException("unreachable code - called getParameterMappings with non function declaration")
+}
+

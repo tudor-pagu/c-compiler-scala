@@ -25,7 +25,10 @@ enum AstExtKind:
   case PrefixOperation(op: PrefixOp, e: AstExt)
   case PostfixOperation(op: PostfixOp, e: AstExt)
   case Identifier(name: String)
-  case DeclarationList(declSpecifiers: List[DeclarationSpecifier], initDeclaratorList: List[(Declarator, Option[AstExt])])
+  case DeclarationList(
+      declSpecifiers: List[DeclarationSpecifier],
+      initDeclaratorList: List[(Declarator, Option[AstExt])]
+  )
   case FunctionDefinition(declaration: Declaration, body: AstExt)
   case Block(statements: List[AstExt])
   case TranslationUnit(statements: List[AstExt])
@@ -63,7 +66,7 @@ enum AstExtKind:
     case AstExtKind.ExprStatement(e) =>
       s"ExprStmt(${e.toString})"
     case AstExtKind.Nothing => "Nothing"
-    case Return(e) => s"Return(${e.toString})"
+    case Return(e)          => s"Return(${e.toString})"
   }
 
 enum TypeQualifier:
@@ -75,9 +78,17 @@ enum TypeQualifier:
   }
 
 enum DirectDeclarator:
-  case Variable(name: Option[String])  // declarator can be absent in abstract declarators (e.g. "int" by itself)
-  case Function(name: Option[String], params: List[Declaration]) 
+  case Variable(
+      name: Option[String]
+  ) // declarator can be absent in abstract declarators (e.g. "int" by itself)
+  case Function(name: Option[String], params: List[Declaration])
   case InnerDeclarator(decl: Declarator)
+
+  def getName(): Option[String] = this match {
+    case Variable(name)         => name
+    case Function(name, params) => name
+    case InnerDeclarator(decl)  => decl.direct.getName()
+  }
 
   override def toString: String = this match {
     case DirectDeclarator.Variable(name) => s"Var($name)"
@@ -87,10 +98,11 @@ enum DirectDeclarator:
     case DirectDeclarator.InnerDeclarator(decl) => s"(${decl.toString})"
   }
 
-
 case class Pointer(qualifiers: List[TypeQualifier]) {
   override def toString: String = {
-    val quals = if (qualifiers.isEmpty) "" else qualifiers.map(_.toString).mkString(" ") + " "
+    val quals =
+      if (qualifiers.isEmpty) ""
+      else qualifiers.map(_.toString).mkString(" ") + " "
     s"* $quals"
   }
 }
@@ -107,7 +119,7 @@ enum DeclarationSpecifier:
   case TQualifier(qualifier: TypeQualifier) // e.g. const, volatile
   override def toString: String = this match {
     case DeclarationSpecifier.TSpecifier(t) => t.toString
-    case DeclarationSpecifier.TQualifier(q)    => q.toString
+    case DeclarationSpecifier.TQualifier(q) => q.toString
   }
 
 enum BinaryOp:
@@ -147,7 +159,6 @@ enum PostfixOp:
       val argStrings = args.map(_.toString).mkString(", ")
       s"Call([$argStrings])"
   }
-
 
 // This represents a type as it appears in the source code. It is used for diagnostics, etc.
 // enum TypeExtKind:

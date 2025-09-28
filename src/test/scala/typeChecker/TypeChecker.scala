@@ -66,7 +66,17 @@ class TypeCheckerTest extends FunSuite {
       int main() {
         f(2,3,5);
       }
-      """, "xyz")
+      """, "Undefined identifier: f")
+  }
+
+  test("failure 2") {
+    expectTypeError("""
+      int f(int a, int b) {
+        return a + b;
+      }
+      int main() {
+      }
+      """, "Undefined identifier: f")
   }
 
 
