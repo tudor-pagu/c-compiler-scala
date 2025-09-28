@@ -11,6 +11,7 @@ import tpagu.compiler.parser.DeclarationSpecifier
 import tpagu.compiler.parser.Declarator
 import tpagu.compiler.parser.DirectDeclarator
 import tpagu.compiler.parser.Declaration
+import tpagu.compiler.parser.DeclarationSpecifier.TSpecifier
 
 type TypeEnvironment = Map[String, Type]
 
@@ -31,8 +32,9 @@ def lookupType(identifier: AstExt, env: TypeEnvironment): Type =
 
 object TypeCheck {
   def typeOf(e: AstExt, nv: TypeEnvironment): (Type, TypeEnvironment) =
+    implicit val span: Span = e.span
     e.node match {
-      case AstExtKind.IntLiteral(_) => (NumT(8), nv)
+      case AstExtKind.IntLiteral(_) => (NumT(4), nv)
       case AstExtKind.Binary(op, l, r) =>
         (op, typeOf(l, nv)._1, typeOf(r, nv)._1) match {
           case (
@@ -123,23 +125,25 @@ object TypeCheck {
             )
         }
         val newNv = nv + (name -> declarationType)
+        val bodyT = typeOf(body, newNv)
         (NoneT(), newNv)
       }
       case AstExtKind.Block(statements) => {
+        val check = statements.foldLeft[TypeEnvironment](nv) {
+          (accNv, statement) =>
+            typeOf(statement, accNv)._2
+        }
         (
           NoneT(),
-          statements.foldLeft[TypeEnvironment](nv) { (accNv, statement) =>
-            typeOf(statement, accNv)._2
-          }
+          nv
         )
       }
       case AstExtKind.TranslationUnit(statements) => {
-        (
-          NoneT(),
-          statements.foldLeft[TypeEnvironment](nv) { (accNv, statement) =>
+        val check = statements.foldLeft[TypeEnvironment](nv) {
+          (accNv, statement) =>
             typeOf(statement, accNv)._2
-          }
-        )
+        }
+        (NoneT(), nv)
       }
       case AstExtKind.ExprStatement(e: AstExt) => {
         // compute the type of the expresssion just to check it.
@@ -155,9 +159,24 @@ object TypeCheck {
 
 }
 
-def getBaseType(declSpecifiers: List[DeclarationSpecifier]): Type = ???
 
-def getTypeOfDeclaration(declaration: Declaration): Type = getTypeOfDeclaration(
+def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit span: Span): Type =
+  println(s"tpagu debug here decl = $declSpecifiers")
+  declSpecifiers.foreach(x => println(s"tpagu debug list: ${x}"))
+  val l = declSpecifiers.filter { 
+    case TSpecifier(t) => true
+    case _ => false
+  }.map {
+    case TSpecifier(t) => t
+    case _ => throw RuntimeException("Unreachable code!")
+  }
+  val x = l.headOption;
+  println(s"tpagu debug x = $x")
+  x.getOrElse(throw RuntimeException("aaaa"))
+
+  //.headOption.getOrElse({println("tpagu bad"); throw createError("No valid type specifier found in declaration.",span);})
+
+def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type = getTypeOfDeclaration(
   declaration.declarationSpecifiers,
   declaration.declarator
 )
@@ -165,11 +184,12 @@ def getTypeOfDeclaration(declaration: Declaration): Type = getTypeOfDeclaration(
 def getTypeOfDeclaration(
     declSpecifiers: List[DeclarationSpecifier],
     declarator: Declarator
-): Type = {
+)(implicit span: Span): Type = {
   val baseType = getBaseType(declSpecifiers)
   declarator.direct match {
     case DirectDeclarator.Variable(_) => baseType
     case DirectDeclarator.Function(_, params) =>
+      println(s"tpagu debug params $params")
       FunT(baseType, params.map(getTypeOfDeclaration(_)))
     case DirectDeclarator.InnerDeclarator(decl) =>
       getTypeOfDeclaration(declSpecifiers, decl)

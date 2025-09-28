@@ -32,7 +32,7 @@ enum ErrorKind {
   }
 }
 
-class CompilerError(val message: String, val span: Span, kind: ErrorKind = ErrorKind.Generic) extends Exception(message) {
+case class CompilerError(val message: String, val span: Span, kind: ErrorKind = ErrorKind.Generic) extends Exception(message) {
   override def toString: String = kind match {
     case ErrorKind.Generic => s"Error at ${span.start}-${span.end}: $message"
     case t@_ => s"${t.toString}: Error at ${span.start}-${span.end}: $message"

@@ -73,13 +73,21 @@ def extractName(nameOpt: Option[AstExt]): Option[String] = nameOpt.map {
 }
 
 def functionDeclarator: ParseRule[DirectDeclarator] =
-  (for {
+  val emptyParamList = for {
+    name <- identifier.maybe
+    _ <- Just(Token.OpenParen)
+    _ <- Just(Token.CloseParen)
+  } yield Right(DirectDeclarator.Function(extractName(name), Nil))
+
+  val nonEmptyParamList = for {
     // case AstExt(AstExtKind.Identifier(name),_) <- identifier.maybe
     name <- identifier.maybe
     _ <- Just(Token.OpenParen)
     params <- listOf(parameterDeclaration)
     _ <- Just(Token.CloseParen)
-  } yield Right(DirectDeclarator.Function(extractName(name), params)))
+  } yield Right(DirectDeclarator.Function(extractName(name), params))
+
+  (emptyParamList <|> nonEmptyParamList)
     .named("function declarator")
 
 def directDeclarator: ParseRule[DirectDeclarator] =
