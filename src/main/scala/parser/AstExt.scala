@@ -1,5 +1,6 @@
 package tpagu.compiler.parser
 import tpagu.compiler.Spanned
+import tpagu.compiler.typeChecker.Type
 
 type AstExt = Spanned[AstExtKind]
 // Extended Ast
@@ -102,7 +103,7 @@ case class Declarator(pointers: List[Pointer], direct: DirectDeclarator) {
 }
 
 enum DeclarationSpecifier:
-  case TSpecifier(t: TypeExt) // e.g. int, char, struct, Foo
+  case TSpecifier(t: Type) // e.g. int, char, struct, Foo
   case TQualifier(qualifier: TypeQualifier) // e.g. const, volatile
   override def toString: String = this match {
     case DeclarationSpecifier.TSpecifier(t) => t.toString
@@ -149,12 +150,12 @@ enum PostfixOp:
 
 
 // This represents a type as it appears in the source code. It is used for diagnostics, etc.
-enum TypeExtKind:
-  case Int
-  case Char
-  case Function(returnType: TypeExt, paramTypes: List[TypeExt])
-  case Array(elementType: TypeExt, size: Int)
-  case Pointer(to: TypeExt)
-
-
-case class TypeExt(baseType: TypeExtKind, qualifiers: List[TypeQualifier] = List())
+// enum TypeExtKind:
+//   case Int
+//   case Char
+//   case Function(returnType: TypeExt, paramTypes: List[TypeExt])
+//   case Array(elementType: TypeExt, size: Int)
+//   case Pointer(to: TypeExt)
+//
+//
+// case class TypeExt(baseType: TypeExtKind, qualifiers: List[TypeQualifier] = List())

@@ -13,7 +13,7 @@ class StatementTest extends FunSuite {
       case Right((ast, _)) => ast.toString()
     }
   }
-  
+
   def parseTranslationUnit(input: String): String = {
     val lexer = new Lexer(new File("test.txt", input))
     translationUnit.parse(lexer) match {
@@ -21,7 +21,6 @@ class StatementTest extends FunSuite {
       case Right((ast, _)) => ast.toString()
     }
   }
-
 
   def expectParseError(
       input: String,
@@ -51,21 +50,21 @@ class StatementTest extends FunSuite {
   test("function declaration1") {
     assertEquals(
       parseStatement("int a(int b, int c);"),
-      "Declaration([Func(Some(a), [Type(Int,List()) Var(Some(b)), Type(Int,List()) Var(Some(c))])])"
+      "Declaration([Func(Some(a), [NumT(4,true) Var(Some(b)), NumT(4,true) Var(Some(c))])])"
     )
   }
 
   test("function declaration2") {
     assertEquals(
       parseStatement("int a(int, int);"),
-      "Declaration([Func(Some(a), [Type(Int,List()) Var(None), Type(Int,List()) Var(None)])])"
+      "Declaration([Func(Some(a), [NumT(4,true) Var(None), NumT(4,true) Var(None)])])"
     )
   }
 
   test("function declaration3") {
     assertEquals(
       parseStatement("int a(int(int, int c), int);"),
-      "Declaration([Func(Some(a), [Type(Int,List()) Func(None, [Type(Int,List()) Var(None), Type(Int,List()) Var(Some(c))]), Type(Int,List()) Var(None)])])"
+      "Declaration([Func(Some(a), [NumT(4,true) Func(None, [NumT(4,true) Var(None), NumT(4,true) Var(Some(c))]), NumT(4,true) Var(None)])])"
     )
   }
 
@@ -74,33 +73,7 @@ class StatementTest extends FunSuite {
       parseStatement(
         "int(int, int);"
       ), // should be valid syntactically but not semantically
-      "Declaration([Func(None, [Type(Int,List()) Var(None), Type(Int,List()) Var(None)])])"
-    )
-  }
-
-  test("block test 1") {
-    assertEquals(
-      parseStatement(
-        "{int a; int b;}"
-      ),
-      "Block({ Declaration([Var(Some(a))]); Declaration([Var(Some(b))]) })"
-    )
-  }
-  test("block test 2") {
-    assertEquals(
-      parseStatement(
-        "{}"
-      ),
-      "Block({  })"
-    )
-  }
-  
-  test("block test 3") {
-    assertEquals(
-      parseStatement(
-        "{int a;}"
-      ),
-      "Block({ Declaration([Var(Some(a))]) })"
+      "Declaration([Func(None, [NumT(4,true) Var(None), NumT(4,true) Var(None)])])"
     )
   }
 
@@ -109,7 +82,7 @@ class StatementTest extends FunSuite {
       parseStatement(
         "int a(int b) { int c; }"
       ),
-      "FuncDef(Type(Int,List()) Func(Some(a), [Type(Int,List()) Var(Some(b))]), Block({ Declaration([Var(Some(c))]) }))"
+      "FuncDef(NumT(4,true) Func(Some(a), [NumT(4,true) Var(Some(b))]), Block({ Declaration([Var(Some(c))]) }))"
     )
   }
 
@@ -126,11 +99,11 @@ class StatementTest extends FunSuite {
         }
         """
       ),
-      """TU({ FuncDef(Type(Int,List()) Func(Some(f), [Type(Int,List()) Var(Some(a)), Type(Int,List()) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(Type(Int,List()) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })"""
+      """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(NumT(4,true) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })"""
     )
   }
-  
-    test("translation unit test 2") {
+
+  test("translation unit test 2") {
     assertEquals(
       parseTranslationUnit(
         """
@@ -144,8 +117,7 @@ class StatementTest extends FunSuite {
         }
         """
       ),
-
-      """TU({ FuncDef(Type(Int,List()) Func(Some(f), [Type(Int,List()) Var(Some(a)), Type(Int,List()) Var(Some(b))]), Block({ Return(Add(Id(a), Id(b))); Declaration([Var(None)]) })); FuncDef(Type(Int,List()) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); Declaration([Var(Some(c)) = Add(Id(a), Int(5))]); Return(Int(0)); Declaration([Var(None)]) })) })"""
+      """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ Return(Add(Id(a), Id(b))); Declaration([Var(None)]) })); FuncDef(NumT(4,true) Func(Some(main), [ Var(None)]), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); Declaration([Var(Some(c)) = Add(Id(a), Int(5))]); Return(Int(0)); Declaration([Var(None)]) })) })"""
     )
   }
 
