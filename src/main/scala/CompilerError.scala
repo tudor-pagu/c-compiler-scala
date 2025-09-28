@@ -20,7 +20,21 @@ object Span {
   }
 }
 
-class CompilerError(val message: String, val span: Span) {
-  override def toString: String =
-    s"Error at ${span.start}-${span.end}: $message"
+enum ErrorKind {
+  case Generic
+  case Syntax
+  case Type
+
+  override def toString(): String = this match {
+    case Generic => "Generic Error"
+    case Syntax  => "Syntax Error"
+    case Type    => "Type Error"
+  }
+}
+
+class CompilerError(val message: String, val span: Span, kind: ErrorKind = ErrorKind.Generic) extends Exception(message) {
+  override def toString: String = kind match {
+    case ErrorKind.Generic => s"Error at ${span.start}-${span.end}: $message"
+    case t@_ => s"${t.toString}: Error at ${span.start}-${span.end}: $message"
+  }
 }
