@@ -136,12 +136,12 @@ enum PrefixOp:
   }
 
 enum PostfixOp:
-  case Increment // e.g. x++
-  case Decrement // e.g. x--
+  // case Increment // e.g. x++
+  // case Decrement // e.g. x--
   case FunctionCall(args: List[(AstExt)]) // e.g. f(2, a)
   override def toString: String = this match {
-    case Increment => "Inc"
-    case Decrement => "Dec"
+    // case Increment => "Inc"
+    // case Decrement => "Dec"
     case PostfixOp.FunctionCall(args) =>
       val argStrings = args.map(_.toString).mkString(", ")
       s"Call([$argStrings])"
