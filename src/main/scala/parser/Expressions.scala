@@ -53,19 +53,30 @@ def atom: ParseRule[AstExt] = {
 
 def postfixOperation: ParseRule[PostfixOp] =
   //TODO add lexer support for ++ and -- and []
+
   def arg = for {
     _ <- Just(Token.Comma)
     expr <- primaryExpression
   } yield Right(expr)
 
-  (for {
+  def functionCallWithArgs = (for {
     _ <- Just(Token.OpenParen)
     firstArg <- primaryExpression
     args <- arg.many
     _ <- Just(Token.CloseParen)
   } yield {
     Right(PostfixOp.FunctionCall(firstArg :: args))
-  }).named("postfixOperation")
+  }).named("functionCall")
+
+  def functionCallWithoutArgs = (for {
+    _ <- Just(Token.OpenParen)
+    _ <- Just(Token.CloseParen)
+  } yield {
+    Right(PostfixOp.FunctionCall(Nil))
+  }).named("functionCallWithoutArgs")
+
+
+  functionCallWithArgs <|> functionCallWithoutArgs
    
 // postfixExpression -> atom {postfixOperation}*
 def postfixExpression: ParseRule[AstExt] = 

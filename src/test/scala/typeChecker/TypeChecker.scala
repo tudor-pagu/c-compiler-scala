@@ -35,7 +35,9 @@ class TypeCheckerTest extends FunSuite {
       fail("Did not fail the type checker.")
     } catch {
       case c @ CompilerError(msg, span, _) => {
-        assert(msg.contains(expectedContains),  s"""
+        assert(
+          msg.contains(expectedContains),
+          s"""
         |Expected error message to contain:
         |  '$expectedContains'
         |But got:
@@ -44,21 +46,21 @@ class TypeCheckerTest extends FunSuite {
         |While checking code:
         |$input
         with span: ${span.start} -> ${span.end}
-        """.stripMargin)
+        """.stripMargin
+        )
       }
-      case x                          => throw x
+      case x => throw x
     }
   }
 
   def expectTypePass(input: String) = {
     val lexer = new Lexer(new File("test.txt", input))
-      val ast = translationUnit.parse(lexer) match {
-        case Left(err)       => fail(s"Could not parse expression: $err")
-        case Right((ast, _)) => ast
-      }
-      println(s"tpagu debug $ast")
-      val empty: Map[String, Type] = Map()
-      val t = typeOf(ast, empty)
+    val ast = translationUnit.parse(lexer) match {
+      case Left(err)       => fail(s"Could not parse expression: $err")
+      case Right((ast, _)) => ast
+    }
+    val empty: Map[String, Type] = Map()
+    val t = typeOf(ast, empty)
   }
 
   def testResultingType(input: String, expected: String) =
@@ -73,11 +75,14 @@ class TypeCheckerTest extends FunSuite {
   }
 
   test("failure 1") {
-    expectTypeError("""
+    expectTypeError(
+      """
       int main() {
         f(2,3,5);
       }
-      """, "Undefined identifier: f")
+      """,
+      "Undefined identifier: f"
+    )
   }
 
   test("function introduces parameters into type environment") {
@@ -88,7 +93,7 @@ class TypeCheckerTest extends FunSuite {
       """)
   }
 
-  test("argument mismatch failure 1") {
+  test("argument correct pass 1") {
     expectTypePass("""
       int f(int a, int b) {
         return a + b;
@@ -99,5 +104,87 @@ class TypeCheckerTest extends FunSuite {
       """)
   }
 
+  test("argument mismatch failure 1") {
+    expectTypeError(
+      """
+      int f(int a, int b) {
+        return a + b;
+      }
+      int main() {
+        f(2, 3, 4);
+      }
+      """,
+      "Tried to call a function with 3 arguments, when the function takes 2 parameters"
+    )
+  }
+
+  test("argument mismatch failure 2") {
+    expectTypeError(
+      """
+      int f(int a, int b) {
+        return a + b;
+      }
+      int main() {
+        f();
+      }
+      """,
+      "Tried to call a function with 0 arguments, when the function takes 2 parameters"
+    )
+  }
+
+  test("argument mismatch failure 3") {
+    expectTypeError(
+      """
+      int f() {
+        return 5;
+      }
+      int main() {
+        f(2);
+      }
+      """,
+      "Tried to call a function with 1 arguments, when the function takes 0 parameters"
+    )
+  }
+
+  test("argument mismatch failure 4") {
+    expectTypeError(
+      """
+      int f() {
+        return 5;
+      }
+      int main() {
+        int x = f(2);
+      }
+      """,
+      "Tried to call a function with 1 arguments, when the function takes 0 parameters"
+    )
+  }
+
+  test("declared type mismatch failure") {
+    expectTypeError(
+      """
+      int f() {
+        return 5;
+      }
+      int main() {
+        int x(int, int) = f(2);
+      }
+      """,
+      "Tried to call a function with 1 arguments, when the function takes 0 parameters"
+    )
+  }
+  
+  test("correct function call 1") {
+    expectTypePass(
+      """
+      int f() {
+        return 5;
+      }
+      int main() {
+        f();
+      }
+      """
+    )
+  }
 
 }

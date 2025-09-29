@@ -55,7 +55,7 @@ def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {
 
 def declaration: ParseRule[AstExt] =
   (for {
-    specs <- declarationSpecifier.many
+    specs <- declarationSpecifier.repeat(1 until Int.MaxValue) // at least one type specifier is needed for a declaration.
     decl <- listOf(initDeclarator)
     _ <- Just(Token.Semicolon)
   } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan
@@ -112,7 +112,7 @@ def blockStatement: ParseRule[AstExt] = (for {
 
 def functionDefinition: ParseRule[AstExt] =
   (for {
-    declSpecs <- declarationSpecifier.many
+    declSpecs <- declarationSpecifier.repeat(1 until Int.MaxValue)
     decl <- functionDeclarator
     body <- blockStatement
   } yield Right(AstExtKind.FunctionDefinition(Declaration(declSpecs, Declarator(Nil, decl)), body)))
@@ -120,7 +120,8 @@ def functionDefinition: ParseRule[AstExt] =
     .named("function definition")
 
 def translationUnit: ParseRule[AstExt] =
-  statement.many.map(stmts => Right(AstExtKind.TranslationUnit(stmts))).withSpan.named("translation unit")
+  statement.many.map(stmts => Right(AstExtKind.TranslationUnit(stmts))).withSpan.named("translation unit") <* Just(Token.EOF)
+
 
 
 def returnStatement: ParseRule[AstExt] = (for {

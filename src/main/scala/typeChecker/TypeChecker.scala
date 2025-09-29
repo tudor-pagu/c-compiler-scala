@@ -75,7 +75,7 @@ object TypeCheck {
                 ) => {
               if (args.size != params.size) {
                 throw createError(
-                  s"Tried to call a function with {args.size} arguments, when the function has ${params.size} parameters",
+                  s"Tried to call a function with ${args.size} arguments, when the function takes ${params.size} parameters.",
                   e.span
                 )
               }
@@ -98,6 +98,12 @@ object TypeCheck {
         var newNv = nv;
         for ((declarator, init) <- initDeclaratorList) {
           val declaredType = getTypeOfDeclaration(declSpecifiers, declarator)
+          init.map(initValue => {
+            if (typeOf(initValue, nv) != declaredType) {
+              throw createError("Type of initializer did not match declared type.", e.span)
+            }
+          })
+
           val name = getNameOfDeclarator(declarator).getOrElse(
             throw createError(
               "Abstract declaration not allowed here. You must give this declaration a name.",
