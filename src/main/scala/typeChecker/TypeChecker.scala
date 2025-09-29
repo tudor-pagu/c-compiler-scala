@@ -79,7 +79,7 @@ object TypeCheck {
                   e.span
                 )
               }
-              val argTypes = args.map(typeOf(_, nv))
+              val argTypes = args.map(typeOf(_, nv)._1)
               if (argTypes != params) {
                 throw createError(
                   s"Mismatch between types expected by function and arguments.",

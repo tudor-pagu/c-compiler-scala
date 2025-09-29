@@ -56,6 +56,7 @@ class TypeCheckerTest extends FunSuite {
         case Left(err)       => fail(s"Could not parse expression: $err")
         case Right((ast, _)) => ast
       }
+      println(s"tpagu debug $ast")
       val empty: Map[String, Type] = Map()
       val t = typeOf(ast, empty)
   }
@@ -79,10 +80,21 @@ class TypeCheckerTest extends FunSuite {
       """, "Undefined identifier: f")
   }
 
-  test("failure 2") {
+  test("function introduces parameters into type environment") {
     expectTypePass("""
       int f(int a, int b) {
         return a + b;
+      }
+      """)
+  }
+
+  test("argument mismatch failure 1") {
+    expectTypePass("""
+      int f(int a, int b) {
+        return a + b;
+      }
+      int main() {
+        f(2, 3);
       }
       """)
   }
