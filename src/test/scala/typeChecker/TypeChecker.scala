@@ -50,7 +50,7 @@ class TypeCheckerTest extends FunSuite {
     }
   }
 
-  def expectTypePass(input: String, expectedContains: String) = {
+  def expectTypePass(input: String) = {
     val lexer = new Lexer(new File("test.txt", input))
       val ast = translationUnit.parse(lexer) match {
         case Left(err)       => fail(s"Could not parse expression: $err")
@@ -84,7 +84,7 @@ class TypeCheckerTest extends FunSuite {
       int f(int a, int b) {
         return a + b;
       }
-      """, "Undefined identifier: f")
+      """)
   }
 
 
