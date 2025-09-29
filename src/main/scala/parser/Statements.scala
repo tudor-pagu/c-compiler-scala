@@ -15,7 +15,7 @@ def emptyStatement: ParseRule[AstExt] = (for {
 } yield Right(AstExtKind.Nothing)).withSpan
 
 def statement: ParseRule[AstExt] =
-  functionDefinition <|> blockStatement <|> declaration <|> expressionStatement <|> returnStatement <|> emptyStatement
+  emptyStatement <|> functionDefinition <|> blockStatement <|> declaration <|> expressionStatement <|> returnStatement
 
 def declarator: ParseRule[Declarator] =
   directDeclarator.map(decl => Right(Declarator(Nil, decl)))
@@ -126,4 +126,5 @@ def translationUnit: ParseRule[AstExt] =
 def returnStatement: ParseRule[AstExt] = (for {
   _ <- Just(Token.Return)
   e <- expression
+  _ <- Just(Token.Semicolon)
 } yield Right(AstExtKind.Return(e))).withSpan
