@@ -124,7 +124,6 @@ object TypeCheck {
               e.span
             )
         }
-        println(s"tpagu debug fun: adding name $name -> $declarationType to nv")
         val newNv = nv + (name -> declarationType) ++ getParameterMappings(declaration)
         val bodyT = typeOf(body, newNv)
         (NoneT(), newNv)
@@ -162,8 +161,6 @@ object TypeCheck {
 
 
 def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit span: Span): Type =
-  println(s"tpagu debug here decl = $declSpecifiers")
-  declSpecifiers.foreach(x => println(s"tpagu debug list: ${x}"))
   val l = declSpecifiers.filter { 
     case TSpecifier(t) => true
     case _ => false
@@ -186,7 +183,6 @@ def getTypeOfDeclaration(
   declarator.direct match {
     case DirectDeclarator.Variable(_) => baseType
     case DirectDeclarator.Function(_, params) =>
-      println(s"tpagu debug params $params")
       FunT(baseType, params.map(getTypeOfDeclaration(_)))
     case DirectDeclarator.InnerDeclarator(decl) =>
       getTypeOfDeclaration(declSpecifiers, decl)
