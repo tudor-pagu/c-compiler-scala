@@ -47,7 +47,7 @@ object TypeCheck {
           }
           case _ =>
             throw createError(
-              s"Invalid binary operation: ${op.toString} between ${typeOf(l, nv).toString} and ${typeOf(r, nv).toString}",
+              s"Invalid binary operation: ${op.toString} between ${typeOf(l, nv)._1.toString} and ${typeOf(r, nv)._1.toString}",
               e.span
             )
         }
@@ -88,8 +88,8 @@ object TypeCheck {
               }
               returnType
             }
-            case _ =>
-              throw createError(s"Tried to call non-function type.", e.span)
+            case (op, t) =>
+              throw createError(s"Tried to call non-function type: ${t.toString}", e.span)
           },
           nv
         )
@@ -99,7 +99,7 @@ object TypeCheck {
         for ((declarator, init) <- initDeclaratorList) {
           val declaredType = getTypeOfDeclaration(declSpecifiers, declarator)
           init.map(initValue => {
-            if (typeOf(initValue, nv) != declaredType) {
+            if (typeOf(initValue, nv)._1 != declaredType) {
               throw createError("Type of initializer did not match declared type.", e.span)
             }
           })
@@ -130,8 +130,9 @@ object TypeCheck {
               e.span
             )
         }
-        val newNv = nv + (name -> declarationType) ++ getParameterMappings(declaration)
-        val bodyT = typeOf(body, newNv)
+        val newNv = nv + (name -> declarationType)
+        val nvForBody = newNv ++ getParameterMappings(declaration)
+        val bodyT = typeOf(body, nvForBody)._1
         (NoneT(), newNv)
       }
       case AstExtKind.Block(statements) => {
@@ -153,12 +154,12 @@ object TypeCheck {
       }
       case AstExtKind.ExprStatement(e: AstExt) => {
         // compute the type of the expresssion just to check it.
-        val typeOfE = typeOf(e, nv)
+        val typeOfE = typeOf(e, nv)._1
         (NoneT(), nv)
       }
       case AstExtKind.Nothing => (NoneT(), nv)
       case AstExtKind.Return(e) => {
-        val typeOfE = typeOf(e, nv)
+        val typeOfE = typeOf(e, nv)._1
         (NoneT(), nv)
       }
     }
