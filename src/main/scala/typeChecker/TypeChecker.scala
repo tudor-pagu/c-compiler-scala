@@ -12,6 +12,7 @@ import tpagu.compiler.parser.Declarator
 import tpagu.compiler.parser.DirectDeclarator
 import tpagu.compiler.parser.Declaration
 import tpagu.compiler.parser.DeclarationSpecifier.TSpecifier
+import java.util.IdentityHashMap
 
 type TypeEnvironment = Map[String, Type]
 
@@ -30,10 +31,17 @@ def lookupType(identifier: AstExt, env: TypeEnvironment): Type =
     case _ => throw new RuntimeException("lookupType called on non-identifier")
   }
 
+
 object TypeCheck {
+  def typeOf(e: AstExt, nv: TypeEnvironment): (Type, TypeEnvironment) = TypeCheck().typeOf(e, nv)
+}
+
+class TypeCheck {
+  var typeMap : IdentityHashMap[AstExt, Type] = IdentityHashMap()
+
   def typeOf(e: AstExt, nv: TypeEnvironment): (Type, TypeEnvironment) =
     implicit val span: Span = e.span
-    e.node match {
+    val result = e.node match {
       case AstExtKind.IntLiteral(_) => (NumT(4), nv)
       case AstExtKind.Binary(op, l, r) =>
         (op, typeOf(l, nv)._1, typeOf(r, nv)._1) match {
@@ -163,6 +171,8 @@ object TypeCheck {
         (NoneT(), nv)
       }
     }
+    typeMap.put(e, result._1)
+    result
 
 }
 
