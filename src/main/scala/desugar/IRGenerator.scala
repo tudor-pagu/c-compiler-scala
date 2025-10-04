@@ -78,11 +78,11 @@ class IRGenerator(lastRegister:Int = 0, variableMap:Map[String, Register] = Map(
 
   def lower(e: AstC): (List[Instruction], IRGenerator) = {
     e match {
-      // top level literal expression is ignored.
-      // e.g. int main() {2;}
-      case IntLiteral(value, t) => (List(), this)
-      case Add(l, r, t) => {
-        ???
+      // evaluate the expression, in case it has side effects,
+      // but ignore the result.
+      case IntLiteral | Add | Mult | Neg | FunctionCall | Identifier => {
+        val res = produceExpression(e)
+        (res._1, res._3)
       }
     }
   }
