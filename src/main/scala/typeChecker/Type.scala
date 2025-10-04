@@ -1,21 +1,32 @@
 package tpagu.compiler.typeChecker
 
-import tpagu.compiler.IntSize
 // This represents the type we use in our core typed AST for lowering into IR, etc.
 // It's not user facing.
 
 // A type may be created from a user provided type, so we may want to keep a reference to it for diagnostics.
 sealed trait Type {
+  def size(): Long
 
 }
 
-case class NumT(size: IntSize, signed: Boolean = true) extends Type
-case class FunT(returnType: Type, paramTypes: List[Type]) extends Type
-case class NoneT() extends Type // Just used for statements, things which shouldn't have types
+case class NumT(width: Long, signed: Boolean = true) extends Type {
+  override def size(): Long = width
+}
+case class FunT(returnType: Type, paramTypes: List[Type]) extends Type {
+  override def size(): Long = {
+    throw RuntimeException("Tried to take size of a function type. This should not be allowed by the type checker.")
+  }
+}
+case class NoneT() extends Type { // Just used for statements, things which shouldn't have types\
+  override def size(): Long = {
+    throw RuntimeException("Tried to take size of a NoneT type. This should not be allowed by the type checker.")
+  }
+}
 
 object Type {
-  val defaultIntSize: IntSize = 4
+  val ptrSize = 8
+  val defaultIntSize: Long = 4
   def numericalPromotion(t: NumT): Type = 
-    if t.size < defaultIntSize then NumT(defaultIntSize , t.signed) else t
+    if t.width < defaultIntSize then NumT(defaultIntSize , t.signed) else t
 }
 
