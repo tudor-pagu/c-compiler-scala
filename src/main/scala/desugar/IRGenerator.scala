@@ -70,6 +70,9 @@ class IRGenerator(lastRegister:Int = 0, variableMap:Map[String, Register] = Map(
         }
 
       }
+      case _ => {
+        throw RuntimeException("Tried to produce expression for non-expression ast node.")
+      }
     }
   }
 

@@ -26,14 +26,14 @@ class DesugarTest extends FunSuite {
       int main() {
         int a = 2;
       }
-      """, "TranslationUnit(List(FunctionDefinition(main,List(),Block(List(Seq(List(Declaration(a,NumT(4,true),Some(IntLiteral(2,NumT(4,true)))))))),NoneT())))")
+      """, "TranslationUnit(List(FunctionDefinition(main,List(),Block(List(Seq(List(Declaration(a,NumT(4,true),Some(IntLiteral(2,NumT(4,true))))),NoneT())),NoneT()),NoneT())),NoneT())")
   }
   test("test subtraction") {
     desugarHelper("""
       int main() {
         int a = 2 - 3;
       }
-      """, "TranslationUnit(List(FunctionDefinition(main,List(),Block(List(Seq(List(Declaration(a,NumT(4,true),Some(Add(IntLiteral(2,NumT(4,true)),Neg(IntLiteral(3,NumT(4,true)),NumT(4,true)),NumT(4,true)))))))),NoneT())))")
+      """, "TranslationUnit(List(FunctionDefinition(main,List(),Block(List(Seq(List(Declaration(a,NumT(4,true),Some(Add(IntLiteral(2,NumT(4,true)),Neg(IntLiteral(3,NumT(4,true)),NumT(4,true)),NumT(4,true))))),NoneT())),NoneT()),NoneT())),NoneT())")
   }
   test("test subtraction") {
     desugarHelper("""
@@ -46,6 +46,6 @@ class DesugarTest extends FunSuite {
         5;
         return f(a, c);
       }
-      """, "TranslationUnit(List(FunctionDefinition(f,List(a, b),Block(List(Return(Add(Add(Identifier(a,NumT(4,true)),Identifier(b,NumT(4,true)),NumT(4,true)),IntLiteral(1,NumT(4,true)),NumT(4,true))))),NoneT()), FunctionDefinition(main,List(),Block(List(Seq(List(Declaration(a,NumT(4,true),Some(Add(IntLiteral(2,NumT(4,true)),Neg(IntLiteral(3,NumT(4,true)),NumT(4,true)),NumT(4,true)))))), Seq(List(Declaration(c,NumT(4,true),Some(Cast(IntLiteral(3,NumT(4,true)),NumT(4,true)))))), IntLiteral(5,NumT(4,true)), Return(FunctionCall(Identifier(f,FunT(NumT(4,true),List(NumT(4,true), NumT(4,true)))),List(Identifier(a,NumT(4,true)), Identifier(c,NumT(4,true))),NumT(4,true))))),NoneT())))")
+      """, "TranslationUnit(List(FunctionDefinition(f,List(a, b),Block(List(Return(Add(Add(Identifier(a,NumT(4,true)),Identifier(b,NumT(4,true)),NumT(4,true)),IntLiteral(1,NumT(4,true)),NumT(4,true)),NoneT())),NoneT()),NoneT()), FunctionDefinition(main,List(),Block(List(Seq(List(Declaration(a,NumT(4,true),Some(Add(IntLiteral(2,NumT(4,true)),Neg(IntLiteral(3,NumT(4,true)),NumT(4,true)),NumT(4,true))))),NoneT()), Seq(List(Declaration(c,NumT(4,true),Some(Cast(IntLiteral(3,NumT(4,true)),NumT(4,true))))),NoneT()), IntLiteral(5,NumT(4,true)), Return(FunctionCall(Identifier(f,FunT(NumT(4,true),List(NumT(4,true), NumT(4,true)))),List(Identifier(a,NumT(4,true)), Identifier(c,NumT(4,true))),NumT(4,true)),NoneT())),NoneT()),NoneT())),NoneT())")
   }
 }
