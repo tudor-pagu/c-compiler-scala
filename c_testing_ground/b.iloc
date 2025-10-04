@@ -1,0 +1,11 @@
+f(r1, r2):
+add r1, r2 => r3
+add r3, 2 => r4
+return r4
+
+main:
+mov 3 => r5
+add r5, 2 => r6
+call f(r5, r6) => r7
+return r7
+
