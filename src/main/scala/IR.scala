@@ -1,12 +1,16 @@
 package tpagu.compiler
+import tpagu.compiler.typeChecker.Type
+
 
 
 sealed trait Instruction
 
 sealed trait Operand
 
-case class Register(name: String) extends Operand
-case class Immediate(value: Long) extends Operand
+type IntSize = 1 | 2 | 4 | 8 // Size of a register in bytes.
+
+case class Register(name: String, size: IntSize = 8) extends Operand
+case class Immediate(value: BigDecimal) extends Operand
 case class Label(name: String) extends Operand
 
 object IR {
