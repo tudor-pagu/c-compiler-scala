@@ -3,6 +3,8 @@ import tpagu.compiler.typeChecker.Type
 
 
 
+type Program = List[Instruction]
+
 sealed trait Instruction
 
 sealed trait Operand
@@ -15,7 +17,7 @@ sealed trait Operand
 //
 // A Register is an abstraction of a machine register and can simply hold a 64 bit value.
 // Operations in my IR typicall deal either with two registers, or with storing or loading a register to memory
-case class Register(id: Int, size: Long = 8) extends Operand
+case class Register(id: Int) extends Operand
 case class Immediate(value: Long) extends Operand
 case class Label(id: String) extends Operand // note: labels are unique
 
@@ -36,7 +38,7 @@ object IR {
   // f must be a label that was previously defined as a functoin taking exactly len(args) arguments
   case class Call(f: Label, args: List[Operand], result: Register) extends Instruction
   // define label to be a function taking a list of parameters in some specific registers.
-  case class Function(label: Label, params: List[Register]) extends Instruction
+  case class Fun(label: Label, params: List[Register]) extends Instruction
   // statement inside a function, meaning that the function will yield this value.
   case class Return(v: Operand) extends Instruction
 
@@ -46,10 +48,7 @@ object IR {
   case class Store(v: Operand, loc: Register, displacement:Long = 0, index:Long = 0, scale:Long = 1, width:Int = 8) extends Instruction
   case class Load(loc: Register, dst: Register, displacement:Long = 0, index:Long = 0, scale:Long = 1, width:Int = 8) extends Instruction
 
-  // I want some way to expose the stack to my IR, I chose this abstraction. This says basically:
-  // r1 <= %rbp, so really when we generate Assembly we can just replace result with RSB everywhere...
-  // So now if you want to touch something on some stack slot just do
-  // store v => [r1 + 8]
-  // which is exactly what we want to see in generated assembly.
-  case class GetRBP(result: Register) extends Instruction
+  // allocates a slot of length size, with specified alignment, in the stack, and makes result be a pointer to its address.
+  // result <= alloc(size, alignment)
+  case class Alloc(result:Register, size: Long, alignment: Long) extends Instruction
 } 

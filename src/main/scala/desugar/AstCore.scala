@@ -17,12 +17,32 @@ case class Neg(e:AstC, t: Type) extends AstC
 case class FunctionCall(callee: AstC, args: List[AstC], t: Type) extends AstC
 case class Identifier(name: String, t: Type) extends AstC
 
-case class Declaration(name: String,t: Type, init:Option[AstC]) extends AstC
-case class FunctionDefinition(name: String, paramNames:List[String], body:AstC, t: Type) extends AstC // t tells us the types of the params, while params tells us the names
-case class Block(statements: List[AstC], t:Type = NoneT()) extends AstC
-case class TranslationUnit(statements: List[AstC], t:Type = NoneT()) extends AstC
-case class Return(e: AstC, t:Type = NoneT()) extends AstC
+case class Assignment(leftSide:String, rightSide: AstC) extends AstC {
+  def t:Type = rightSide.t
+}
+
+// We are defining a variable (so we must allocate space for it right here, etc.) This can't be an extern statement.
+case class VarDefinition(name: String,ofType: Type) extends AstC {
+  def t:Type = NoneT()
+}
+
+case class FunctionDefinition(name: String, paramNames:List[String], body:AstC, ofType: Type) extends AstC { // t tells us the types of the params, while params tells us the names
+  def t:Type = NoneT()
+}
+
+case class Block(statements: List[AstC]) extends AstC {
+  def t:Type = NoneT()
+}
+
+case class TranslationUnit(statements: List[AstC]) extends AstC {
+  def t:Type = NoneT()
+}
+case class Return(e: AstC) extends AstC {
+  def t:Type = NoneT()
+}
 case class Cast(e: AstC, t: Type) extends AstC
 // first execute this, then execute that. Both statements are executed
-// in the same block/scope.
-case class Seq(statements: List[AstC], t:Type = NoneT()) extends AstC
+// in the same block/scope. Seq does *not* introduce a new scope, it's not {}
+case class Seq(statements: List[AstC]) extends AstC {
+  def t:Type = NoneT()
+}

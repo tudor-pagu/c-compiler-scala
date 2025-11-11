@@ -36,9 +36,17 @@ object Desugar {
       }
       case AstExtKind.Identifier(name) => Identifier(name, typeMap.get(e))
       case AstExtKind.DeclarationList(declSpecifiers, initDeclaratorList) => Seq(initDeclaratorList.map(initDecl => {
+          assert(initDecl._1.direct.getName().isDefined)
+
           implicit val span: Span = e.span // at this point, we should *never* get a compiler error when deducing this type, since it got typechecked.
           val declaredType = getTypeOfDeclaration(declSpecifiers, initDecl._1)
-          Declaration(initDecl._1.direct.getName().get, declaredType, initDecl._2.map(i => Desugar.desugar(i)))
+          val init = initDecl._2.map(i => Desugar.desugar(i))
+          val varDef = VarDefinition(initDecl._1.direct.getName().get, declaredType)
+          if (init.isDefined) then {
+            Seq(List(varDef, Assignment(initDecl._1.direct.getName().get, init.get)))
+          } else {
+            varDef
+          }
         }
       ))
       case AstExtKind.FunctionDefinition(declaration, body) => {

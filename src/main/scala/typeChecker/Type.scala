@@ -5,21 +5,29 @@ package tpagu.compiler.typeChecker
 
 // A type may be created from a user provided type, so we may want to keep a reference to it for diagnostics.
 sealed trait Type {
-  def size(): Long
+  def size(): Long // all types need to know their size
+  def alignment(): Long // all types need to know their alignment requirement
 
 }
 
 case class NumT(width: Long, signed: Boolean = true) extends Type {
   override def size(): Long = width
+  override def alignment(): Long = width
 }
 case class FunT(returnType: Type, paramTypes: List[Type]) extends Type {
   override def size(): Long = {
     throw RuntimeException("Tried to take size of a function type. This should not be allowed by the type checker.")
   }
+  override def alignment(): Long = {
+    throw RuntimeException("Tried to take alignment of a function type. This should not be allowed by the type checker.")
+  }
 }
 case class NoneT() extends Type { // Just used for statements, things which shouldn't have types\
   override def size(): Long = {
     throw RuntimeException("Tried to take size of a NoneT type. This should not be allowed by the type checker.")
+  }
+  override def alignment(): Long = {
+    throw RuntimeException("Tried to take alignment of a NoneT type. This should not be allowed by the type checker.")
   }
 }
 
