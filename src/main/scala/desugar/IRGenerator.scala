@@ -14,6 +14,9 @@ import tpagu.compiler.IR.Store
 import tpagu.compiler.IR.Fun
 
 def isValidWidth(width:Int) = width == 1 || width == 2 || width == 4 || width == 8
+object IRGenerator {
+  def newIrGenerator(): IRGenerator = IRGenerator(0, Map(), Map())
+}
 
 // ***
 // IRGenerator will take an AstC (Core AST) and generate a list of instructions that will correspond to this AstC,

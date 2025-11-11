@@ -17,38 +17,72 @@ sealed trait Operand
 //
 // A Register is an abstraction of a machine register and can simply hold a 64 bit value.
 // Operations in my IR typicall deal either with two registers, or with storing or loading a register to memory
-case class Register(id: Int) extends Operand
-case class Immediate(value: Long) extends Operand
-case class Label(id: String) extends Operand // note: labels are unique
+case class Register(id: Int) extends Operand {
+  override def toString(): String = s"r$id"
+
+}
+case class Immediate(value: Long) extends Operand {
+  override def toString(): String = s"$$$value"
+}
+case class Label(id: String) extends Operand { // note: labels are unique
+  override def toString(): String = s"${id}"
+}
 
 object IR {
   // Rresult <= l + r
-  case class Add(l: Operand, r: Operand, result: Register) extends Instruction
+  case class Add(l: Operand, r: Operand, result: Register) extends Instruction {
+    override def toString(): String = s"$result <= $l + $r"
+  }
   // Rresult <= l * r
-  case class Mult(l: Operand, r: Operand, result: Register) extends Instruction
+  case class Mult(l: Operand, r: Operand, result: Register) extends Instruction {
+    override def toString(): String = s"$result <= $l * $r"
+  }
   // Rresult <= -v
-  case class Neg(v: Operand, result: Register) extends Instruction
+  case class Neg(v: Operand, result: Register) extends Instruction {
+    override def toString(): String = s"$result <= -$v"
+  }
   // Rdst = src
-  case class Mov(src: Operand, dst: Register) extends Instruction
+  case class Mov(src: Operand, dst: Register) extends Instruction {
+    override def toString(): String = s"mov $src => $dst"
+  }
   // label:
-  case class LabelDecl(label: Label) extends Instruction
+  case class LabelDecl(label: Label) extends Instruction {
+    override def toString(): String = s"\n$label:"
+  }
  
   // Functions: To simplify writing IR, we provide the function abstraction.
   // Rresult <= f(args...)
   // f must be a label that was previously defined as a functoin taking exactly len(args) arguments
-  case class Call(f: Label, args: List[Operand], result: Register) extends Instruction
+  case class Call(f: Label, args: List[Operand], result: Register) extends Instruction {
+    override def toString: String =
+      s"$result <= $f(${args.mkString(", ")})"
+  }
+
   // define label to be a function taking a list of parameters in some specific registers.
-  case class Fun(label: Label, params: List[Register]) extends Instruction
+  case class Fun(label: Label, params: List[Register]) extends Instruction {
+    override def toString: String =
+      s"$label(${params.mkString(", ")})"
+  }
+
   // statement inside a function, meaning that the function will yield this value.
-  case class Return(v: Operand) extends Instruction
+  case class Return(v: Operand) extends Instruction {
+    override def toString(): String = s"return $v"
+  }
 
   // Memory
   // store v => [loc]
   // meaning you store the value v inside the place in memory pointed to by loc.
-  case class Store(v: Operand, loc: Register, displacement:Long = 0, index:Long = 0, scale:Long = 1, width:Int = 8) extends Instruction
-  case class Load(loc: Register, dst: Register, displacement:Long = 0, index:Long = 0, scale:Long = 1, width:Int = 8) extends Instruction
+  case class Store(v: Operand, loc: Register, displacement:Long = 0, index:Long = 0, scale:Long = 1, width:Int = 8) extends Instruction {
+    override def toString(): String = s"store $v => [$loc]"
+  }
+
+  case class Load(loc: Register, dst: Register, displacement:Long = 0, index:Long = 0, scale:Long = 1, width:Int = 8) extends Instruction {
+    override def toString(): String = s"load [$loc] => $dst"
+  }
 
   // allocates a slot of length size, with specified alignment, in the stack, and makes result be a pointer to its address.
   // result <= alloc(size, alignment)
-  case class Alloc(result:Register, size: Long, alignment: Long) extends Instruction
+  case class Alloc(result:Register, size: Long, alignment: Long) extends Instruction {
+    override def toString(): String = s"$result <= alloc($size, $alignment)"
+  }
 } 
