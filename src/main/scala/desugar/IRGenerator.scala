@@ -189,6 +189,36 @@ class IRGenerator(
         // we don't want to take the IRGen (scope, etc.) of the block. Just take the register count
         (innerOps, this.withLastRegisterOf(innerIrGen))
       }
+      
+      case TranslationUnit(statements) => {
+        val (innerOps, innerIrGen) = statements.foldLeft(List():List[Instruction], this)((acc, current) => {
+          val (previousOps, previousIrGen) = acc
+          val x = previousIrGen.lower(current)
+          (previousOps ++ x._1, x._2)
+        })
+        // we don't want to take the IRGen (scope, etc.) of the block. Just take the register count
+        (innerOps, this.withLastRegisterOf(innerIrGen))
+      }
+
+      case Return(e) => {
+        val (ops, op, ir2) = this.produceExpression(e)
+        (ops :+ tpagu.compiler.IR.Return(op), ir2)
+      }
+
+      case Cast(e, t) => {
+        ???
+      }
+
+      case Seq(statements) => {
+        val (innerOps, innerIrGen) = statements.foldLeft(List():List[Instruction], this)((acc, current) => {
+          val (previousOps, previousIrGen) = acc
+          val x = previousIrGen.lower(current)
+          (previousOps ++ x._1, x._2)
+        })
+        // here we dont want to keep the same IrGen since Seq doesnt create a new scope
+        (innerOps, innerIrGen)
+
+      }
 
     }
   }
