@@ -9,6 +9,12 @@ import tpagu.compiler.typeChecker.FunT
 import tpagu.compiler.Label
 import tpagu.compiler.typeChecker.NumT
 
+// ***
+// IRGenerator will take an AstC (Core AST) and generate a list of instructions that will correspond to this AstC,
+// as well as a new IRGenerator. We need to return a new IRGenerator because lowering an AstC may introduce bindings
+// within some scopes, which we keep inside IRGenerator. Also, it may use up certain global resources, like "Registers"
+//
+// ***
 class IRGenerator(lastRegister:Int = 0, variableMap:Map[String, Register] = Map()) {
   def getNewRegister(size: Long): (Register, IRGenerator) = {
     (Register(lastRegister + 1, size), IRGenerator(lastRegister + 1))
@@ -83,6 +89,9 @@ class IRGenerator(lastRegister:Int = 0, variableMap:Map[String, Register] = Map(
       case IntLiteral | Add | Mult | Neg | FunctionCall | Identifier => {
         val res = produceExpression(e)
         (res._1, res._3)
+      }
+      case Declaration(name, t, init) => {
+
       }
     }
   }
