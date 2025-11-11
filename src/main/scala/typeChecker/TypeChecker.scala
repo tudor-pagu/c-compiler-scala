@@ -37,6 +37,7 @@ object TypeCheck {
 }
 
 class TypeCheck {
+  // typeMap gives hints to the desugarer when creating the typed, core AST.
   var typeMap : IdentityHashMap[AstExt, Type] = IdentityHashMap()
 
   def typeOf(e: AstExt, nv: TypeEnvironment): (Type, TypeEnvironment) =
@@ -141,6 +142,8 @@ class TypeCheck {
         val newNv = nv + (name -> declarationType)
         val nvForBody = newNv ++ getParameterMappings(declaration)
         val bodyT = typeOf(body, nvForBody)._1
+
+        typeMap.put(e, declarationType)
         (NoneT(), newNv)
       }
       case AstExtKind.Block(statements) => {
@@ -171,7 +174,12 @@ class TypeCheck {
         (NoneT(), nv)
       }
     }
-    typeMap.put(e, result._1)
+    if (!typeMap.containsKey(e)) {
+      // for some nodes we want to give special hints to the desugarer, so we override this behavior...
+      // for example, for function definitions, the type of the node is NoneT(), but we make it be the type of the function anyway, just so that
+      // the desugerar can create the AstC properly.
+      typeMap.put(e, result._1)
+    }
     result
 
 }

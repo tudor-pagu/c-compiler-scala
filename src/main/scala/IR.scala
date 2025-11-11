@@ -61,7 +61,7 @@ object IR {
   // define label to be a function taking a list of parameters in some specific registers.
   case class Fun(label: Label, params: List[Register]) extends Instruction {
     override def toString: String =
-      s"$label(${params.mkString(", ")})"
+      s"$label(${params.mkString(", ")}):"
   }
 
   // statement inside a function, meaning that the function will yield this value.

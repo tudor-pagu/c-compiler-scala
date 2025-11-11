@@ -68,22 +68,21 @@ class IRGenerator(
   def produceExpression(e: AstC): (List[Instruction], Operand, IRGenerator) = {
     e match {
       case IntLiteral(value, t) => {
-        val (register, irgen2) = getNewRegister()
-        (List(), Immediate(value), irgen2)
+        (List(), Immediate(value), this)
       }
       case Add(l, r, t) => {
         val (lpre, lop, ir2) = this.produceExpression(l)
         val (rpre, rop, ir3) = ir2.produceExpression(r)
         val (reg, ir4) = ir3.getNewRegister()
         val fop = IR.Add(lop, rop, reg)
-        (lpre ++ rpre :+ fop, reg, ir3)
+        (lpre ++ rpre :+ fop, reg, ir4)
       }
       case Mult(l, r, t) => {
         val (lpre, lop, ir2) = this.produceExpression(l)
         val (rpre, rop, ir3) = ir2.produceExpression(r)
         val (reg, ir4) = ir3.getNewRegister()
         val fop = IR.Mult(lop, rop, reg)
-        (lpre ++ rpre :+ fop, reg, ir3)
+        (lpre ++ rpre :+ fop, reg, ir4)
       }
       case Neg(inner, t) => {
         val (lpre, lop, ir2) = this.produceExpression(inner)
@@ -92,7 +91,7 @@ class IRGenerator(
         (lpre :+ fop, reg, ir3)
       }
       case FunctionCall(callee, args, t) => {
-        (callee, t) match {
+        (callee, callee.t) match {
           case (Identifier(name, idt), FunT(ret, params)) => {
             val preops = args.foldLeft(
               (Nil: List[Instruction], this, Nil: List[Operand])
