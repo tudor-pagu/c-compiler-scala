@@ -180,10 +180,15 @@ class IRGenerator(
         val finalIrGen = this.withLastRegisterOf(execBody._2)
         (finalOps, finalIrGen)
       }
-      // case Block(statements) => {
-      //   val outerScope = variableMap;
-      //   val x = statements.
-      // }
+      case Block(statements) => {
+        val (innerOps, innerIrGen) = statements.foldLeft(List():List[Instruction], this)((acc, current) => {
+          val (previousOps, previousIrGen) = acc
+          val x = previousIrGen.lower(current)
+          (previousOps ++ x._1, x._2)
+        })
+        // we don't want to take the IRGen (scope, etc.) of the block. Just take the register count
+        (innerOps, this.withLastRegisterOf(innerIrGen))
+      }
 
     }
   }
