@@ -1,11 +1,13 @@
+package ir
+
+import ir.IRGenerator
 import munit.FunSuite
-import tpagu.compiler.desugar.IRGenerator
-import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.File
-import tpagu.compiler.parser.translationUnit
-import tpagu.compiler.typeChecker.TypeCheck
-import tpagu.compiler.typeChecker.Type
 import tpagu.compiler.desugar.Desugar
+import tpagu.compiler.lexer.Lexer
+import tpagu.compiler.parser.translationUnit
+import tpagu.compiler.typeChecker.{Type, TypeCheck}
+
 import scala.util.matching.Regex
 
 private val AnsiRegex: Regex = raw"\u001B\[[0-9;]*m".r

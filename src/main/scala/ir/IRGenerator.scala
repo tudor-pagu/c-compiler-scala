@@ -1,17 +1,9 @@
-package tpagu.compiler.desugar
+package ir
 
-import tpagu.compiler.Instruction
-import tpagu.compiler.Operand
-import tpagu.compiler.Register
-import tpagu.compiler.Immediate
-import tpagu.compiler.IR
-import tpagu.compiler.typeChecker.FunT
-import tpagu.compiler.Label
-import tpagu.compiler.typeChecker.NumT
-import tpagu.compiler.IR.Alloc
-import tpagu.compiler.Program
-import tpagu.compiler.IR.Store
-import tpagu.compiler.IR.Fun
+import IR.{Alloc, Fun, Store}
+import tpagu.compiler.*
+import tpagu.compiler.desugar.*
+import tpagu.compiler.typeChecker.{FunT, NumT}
 
 def isValidWidth(width:Int) = width == 1 || width == 2 || width == 4 || width == 8
 object IRGenerator {
@@ -204,7 +196,7 @@ class IRGenerator(
 
       case Return(e) => {
         val (ops, op, ir2) = this.produceExpression(e)
-        (ops :+ tpagu.compiler.IR.Return(op), ir2)
+        (ops :+ _root_.ir.IR.Return(op), ir2)
       }
 
       case Cast(e, t) => {

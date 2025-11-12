@@ -1,4 +1,5 @@
-package tpagu.compiler
+package ir
+
 import tpagu.compiler.typeChecker.Type
 
 
