@@ -134,11 +134,25 @@ return r10
       }
       """,
       """
-foo(r1, r2):
+ foo(r1, r2):                                                                                                                                                   
+r1 <= alloc(4, 4)                                                                                                                                              
+r2 <= alloc(4, 4)
 load [r1] => r3
 load [r2] => r4
+r5 <= r3 + r4
+return r5
 main():
-
+r6 <= alloc(4, 4)
+store $2 => [r6]
+r7 <= alloc(4, 4)
+store $3 => [r7]
+r8 <= alloc(4, 4)
+load [r6] => r9
+load [r7] => r10
+r11 <= foo(r9, r10)
+store r11 => [r8]
+load [r8] => r12
+return r12
 """
     )
   }

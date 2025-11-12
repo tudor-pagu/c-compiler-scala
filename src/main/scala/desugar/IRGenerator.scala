@@ -177,7 +177,7 @@ class IRGenerator(
           Fun(
             funLabel, registers
             )
-        ) ++ execBody._1
+        ) ++ ops ++ execBody._1
 
         val finalIrGen = this.withLastRegisterOf(execBody._2)
         (finalOps, finalIrGen)
