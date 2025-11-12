@@ -3,6 +3,7 @@ package tpagu.compiler.ir
 import scala.collection.mutable.ListBuffer
 import IR.LabelDecl
 import tpagu.compiler.ir.IR.Fun
+import tpagu.compiler.ir.IR.Return
 /**
  * We include an IR interpreter for two reasons:
  * 1. It is useful for tests
@@ -10,6 +11,8 @@ import tpagu.compiler.ir.IR.Fun
  * It also shouldn't be very complex to write
  */
 type DebugValues = List[Long]
+
+val MAX_MEMORY_SIZE = 268435456 // 256 MB
 
 private class IrFunction(val name: String, val decl: Fun, val body: Program)
 
@@ -50,13 +53,13 @@ class IrInterpreter {
   // inside a register. We also yield the exit code of the main
   // function. In my IR, all functions must return exactly on register
   // sized value. If no value is explicitly returned, 0 is implicitly returned.
-  def interp(program: Program): (DebugValues, Long) = {
+  def interp(program: Program): (Long) = {
     println(program)
     val functions = splitProgramIntoFunctions(program)
     val mainFunction = functions.find(_.name == "main")
     mainFunction match {
       case Some(main) => {
-        this.interp(program)
+        this.interpFunction(main, List(), Map(), Memory(Array.ofDim(MAX_MEMORY_SIZE)))
       }
       case None => {
         throw new RuntimeException("Tried to interpret iR with no main function. Can't interpret a translation unit with no entry point.")
@@ -64,13 +67,24 @@ class IrInterpreter {
     }
   }
 
+
   // interpret executing this function, given some arguments (which are all 64 bit register values), 
   // and yield the return value of the function, as well as any executed debug stataments.
-  def interpFunction(f: IrFunction, args: List[Long]): (DebugValues, Long) = {
-    ???
+  def interpFunction(f: IrFunction, args: List[Long], registersState: Map[Long, Long], memory: Memory): (Long) = {
+    def helper(ops:Program, regs: Map[Long, Long], mem: Memory): Long = {
+      ops.head match {
+        case Return(v) => regs.get(v.id).get
+        case _ => {
+          val exec = this.interpInstr(ops.head, regs, mem)
+          helper(ops.tail, exec._1, exec._2)
+        }
+      }
+    }
+    val newRegisters = registersState ++ f.decl.params.map(_.id).zip(args)
+    helper(f.body, newRegisters, memory)
   }
 
-  def interpInstr(i: Instruction, registersState: Map[Long, Long], memory: Memory) = {
+  def interpInstr(i: Instruction, registersState: Map[Long, Long], memory: Memory):(Map[Long,Long], Memory) = {
     ???
   }
 

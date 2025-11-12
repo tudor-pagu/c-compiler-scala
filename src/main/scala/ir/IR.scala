@@ -18,7 +18,7 @@ sealed trait Operand
 //
 // A Register is an abstraction of a machine register and can simply hold a 64 bit value.
 // Operations in my IR typicall deal either with two registers, or with storing or loading a register to memory
-case class Register(id: Int) extends Operand {
+case class Register(id: Long) extends Operand {
   override def toString(): String = s"r$id"
 
 }
@@ -68,7 +68,8 @@ object IR {
   }
 
   // statement inside a function, meaning that the function will yield this value.
-  case class Return(v: Operand) extends Instruction {
+  // We can only return a Register
+  case class Return(v: Register) extends Instruction {
     override def toString(): String = s"return $v"
   }
 
