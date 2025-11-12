@@ -11,7 +11,7 @@ sealed trait Instruction
 sealed trait Operand
 
 // We're assuming that we're running on a 64 bit machine, and all registers are considered to be
-// 64 bit. All immediate values must also be 64 bits signed integers.
+// 64 bit. All immediate values must also be 64 bits 2s complement integers.
 // Memory is byte addressable. Store and Load operations will write to arbitrary locations in memory.
 // By default, we write 8 bytes, but the width parameter can allow the store or load to store or load smaller values.
 // Width must be either 1,2,4, or 8, any other value is invalid.
@@ -60,7 +60,9 @@ object IR {
   }
 
   // define label to be a function taking a list of parameters in some specific registers.
-  case class Fun(label: Label, params: List[Register]) extends Instruction {
+  // static option needs to be in the IR, like for all top level declarations, to tell the Assembly gen
+  // if it should emit a symbol here or not.
+  case class Fun(label: Label, params: List[Register], static:Boolean = false) extends Instruction {
     override def toString: String =
       s"$label(${params.mkString(", ")}):"
   }
@@ -86,4 +88,15 @@ object IR {
   case class Alloc(result:Register, size: Long, alignment: Long) extends Instruction {
     override def toString(): String = s"$result <= alloc($size, $alignment)"
   }
+
+
+  //TODO: For global definitions and declarations of functions, as well as simple declarations of functions, we will add this:
+  // GlobalAlloc(result: Register, size: Long, Alignment: Long, name: String, static: Boolean = false, extern: Boolean = false) -> in the assembly it can emit a proper .dss or .data allocation
+  // for the symbol with name 'name'. 
+  // This also handles extern declarations. They will still create a register that points to their address, but we wont really need to allocate
+  // space for them in the assembly. If the registers are optimized away, in the assembly we can go directly to the symbol itself. Otherwise we
+  // need to hold a register with the address of the global variable, because our program must take the reference of it somewhere.
+  //
+  // We wont need any instruction for function declarations, since we can't interpret them, and when going to assembly we just emit the call instruction
+  // without needing to consider the function itself.
 } 

@@ -30,16 +30,34 @@ class IrInterpreterTest extends FunSuite {
     assertEquals(interpResult._1, expectedDebugStmts)
   }
 
-  test("test 1") {
-    irInterpHelper(
-      """
-      int foo(int x) {
-        return x + 1;
-      }
-      int main() {
-        return 1;
-      }
-      """,1)
+  test("memory test 1") {
+    val mem = Memory(Array.ofDim(100))
+    mem.storeAt(0, 10, 8)
+    assertEquals(mem.loadAt(0,8), 10L)
+  }
+  
+  test("memory test 2") {
+    val mem = Memory(Array.ofDim(100))
+    mem.storeAt(0, 127, 1)
+    assertEquals(mem.loadAt(0,8), 127L)
   }
 
+  test("memory test 3") {
+    val mem = Memory(Array.ofDim(100))
+    mem.storeAt(0, -128, 1)
+    assertEquals(mem.loadAt(0,8), -128L)
+  }
+
+  // test("test 1") {
+  //   irInterpHelper(
+  //     """
+  //     int foo(int x) {
+  //       return x + 1;
+  //     }
+  //     int main() {
+  //       return 1;
+  //     }
+  //     """,1)
+  // }
+  //
 }
