@@ -45,8 +45,33 @@ class IrInterpreterTest extends FunSuite {
   test("memory test 3") {
     val mem = Memory(Array.ofDim(100))
     mem.storeAt(0, -128, 1)
-    assertEquals(mem.loadAt(0,8), -128L)
+    // we expect this to write
+    // | 1000 000 | 0x00 | 0x00
+    // to memory
+    assertEquals(mem.loadAt(0,1), -128L)
+    assertEquals(mem.loadAt(0,2), 128L)
+    assertEquals(mem.loadAt(0,4), 128L)
+    assertEquals(mem.loadAt(0,8), 128L)
   }
+
+  test("memory test 4") {
+    val mem = Memory(Array.ofDim(100))
+    mem.storeAt(0, -1, 1)
+    // we expect this to write
+    // | 0xFF | 0x00 | 0x00
+    // to memory
+    assertEquals(mem.loadAt(0,1), -1L)
+    assertEquals(mem.loadAt(0,2), 255L)
+    assertEquals(mem.loadAt(0,4), 255L)
+    assertEquals(mem.loadAt(0,8), 255L)
+  }
+
+  test("memory test 5") {
+    val mem = Memory(Array.ofDim(100))
+    mem.storeAt(0, -1, 2)
+    assertEquals(mem.loadAt(0,1), -1L)
+  }
+
 
   // test("test 1") {
   //   irInterpHelper(

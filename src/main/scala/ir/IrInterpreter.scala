@@ -14,7 +14,8 @@ type DebugValues = List[Long]
 private class IrFunction(val name: String, val decl: Fun, val body: Program)
 
 class Memory(val mem:Array[Byte]) {
-  def nthByte(value: Long, n: Int): Byte = ((value >>> (8 * n)) & 0xFF).toByte
+  def nthByte(value:Long, n: Int): Byte = ((value >>> (8 * n)) & 0xFF).toByte
+
   def loadAt(location:Int, width: Int): Long = {
     assert(0 <= location && location + width <= mem.length)
     assert(isValidWidth(width))
@@ -22,14 +23,20 @@ class Memory(val mem:Array[Byte]) {
     for (i <- location until location + width) {
       x = x | ( ( mem(i).toLong & 0xFFL) << ((i - location) * 8) )
     }
-    // assert(-(1L << (8 * width - 1  ) ) <= x && x <= (1L << (8 * width - 1 )) - 1)
-    x
+
+    width match {
+      case 1 => x.toByte
+      case 2 => x.toShort
+      case 4 => x.toInt
+      case 8 => x.toLong
+    }  
   }
 
   def storeAt(location:Int, value: Long, width: Int):Unit = {
     assert(0 <= location && location + width <= mem.length)
-    // assert(-(1L << (8 * width - 1  ) ) <= value && value <= (1L << (8 * width - 1 )) - 1)
+    assert(-(1L << (8 * width - 1  ) ) <= value && value <= (1L << (8 * width - 1 )) - 1)
     assert(isValidWidth(width))
+
     for (i <- location until location + width) {
       mem(i) = nthByte(value, i - location)
     }
