@@ -1,4 +1,4 @@
-package ir
+package tpagu.compiler.ir
 
 import IR.{Alloc, Fun, Store}
 import tpagu.compiler.*
@@ -196,7 +196,7 @@ class IRGenerator(
 
       case Return(e) => {
         val (ops, op, ir2) = this.produceExpression(e)
-        (ops :+ _root_.ir.IR.Return(op), ir2)
+        (ops :+ IR.Return(op), ir2)
       }
 
       case Cast(e, t) => {

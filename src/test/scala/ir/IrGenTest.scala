@@ -1,6 +1,4 @@
-package ir
-
-import ir.IRGenerator
+import tpagu.compiler.ir.IRGenerator
 import munit.FunSuite
 import tpagu.compiler.File
 import tpagu.compiler.desugar.Desugar
