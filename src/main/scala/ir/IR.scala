@@ -69,18 +69,18 @@ object IR {
 
   // statement inside a function, meaning that the function will yield this value.
   // We can only return a Register
-  case class Return(v: Register) extends Instruction {
+  case class Return(v: Operand) extends Instruction {
     override def toString(): String = s"return $v"
   }
 
   // Memory
   // store v => [loc]
   // meaning you store the value v inside the place in memory pointed to by loc.
-  case class Store(v: Operand, loc: Register, displacement:Long = 0, index:Long = 0, scale:Long = 1, width:Int = 8) extends Instruction {
+  case class Store(v: Operand, loc: Register, displacement:Long = 0, index:Option[Register] = None, scale:Long = 1, width:Int = 8) extends Instruction {
     override def toString(): String = s"store $v => [$loc]"
   }
 
-  case class Load(loc: Register, dst: Register, displacement:Long = 0, index:Long = 0, scale:Long = 1, width:Int = 8) extends Instruction {
+  case class Load(loc: Register, dst: Register, displacement:Long = 0, index:Option[Register] = None, scale:Long = 1, width:Int = 8) extends Instruction {
     override def toString(): String = s"load [$loc] => $dst"
   }
 

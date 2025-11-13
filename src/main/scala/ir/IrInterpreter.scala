@@ -9,6 +9,7 @@ import tpagu.compiler.ir.IR.Mult
 import tpagu.compiler.ir.IR.Neg
 import tpagu.compiler.ir.IR.Mov
 import tpagu.compiler.ir.IR.Call
+import tpagu.compiler.ir.IR.Store
 /**
  * We include an IR interpreter for two reasons:
  * 1. It is useful for tests
@@ -21,34 +22,57 @@ val MAX_MEMORY_SIZE = 268435456 // 256 MB
 
 private class IrFunction(val name: String, val decl: Fun, val body: Program)
 
-class Memory(val mem:Array[Byte]) {
-  def nthByte(value:Long, n: Int): Byte = ((value >>> (8 * n)) & 0xFF).toByte
+final case class Memory(mem: Vector[Byte]) {
 
-  def loadAt(location:Int, width: Int): Long = {
+  private def nthByte(value: Long, n: Int): Byte =
+    ((value >>> (8 * n)) & 0xFFL).toByte
+
+  def size: Int = mem.length
+
+  def loadAt(location: Long, width: Int): Long = {
     assert(0 <= location && location + width <= mem.length)
     assert(isValidWidth(width))
-    var x:Long = 0;
-    for (i <- location until location + width) {
-      x = x | ( ( mem(i).toLong & 0xFFL) << ((i - location) * 8) )
+
+    // little-endian reconstruction
+    var x = 0L
+    var offset = 0L
+    while (offset < width) {
+      val b = mem( (location + offset).toInt ) 
+      x |= ((b.toLong & 0xFFL) << (offset * 8))
+      offset += 1
     }
 
+    // sign-extend to Long according to width
     width match {
-      case 1 => x.toByte
-      case 2 => x.toShort
-      case 4 => x.toInt
-      case 8 => x.toLong
-    }  
-  }
-
-  def storeAt(location:Int, value: Long, width: Int):Unit = {
-    assert(0 <= location && location + width <= mem.length)
-    assert(-(1L << (8 * width - 1  ) ) <= value && value <= (1L << (8 * width - 1 )) - 1)
-    assert(isValidWidth(width))
-
-    for (i <- location until location + width) {
-      mem(i) = nthByte(value, i - location)
+      case 1 => x.toByte.toLong
+      case 2 => x.toShort.toLong
+      case 4 => x.toInt.toLong
+      case 8 => x
     }
   }
+
+  def storeAt(location: Long, value: Long, width: Int): Memory = {
+    assert(0 <= location && location + width <= mem.length)
+    assert(isValidWidth(width))
+    assert(
+      -(1L << (8 * width - 1)) <= value &&
+        value <= (1L << (8 * width - 1)) - 1
+    )
+
+    var m   = mem
+    var off = 0
+    while (off < width) {
+      m = m.updated( (location + off).toInt, nthByte(value, off))
+      off += 1
+    }
+
+    copy(mem = m)
+  }
+}
+
+object Memory {
+  def zeroed(size: Int): Memory =
+    Memory(Vector.fill(size)(0.toByte))
 }
 
 class IrInterpreter {
@@ -62,11 +86,12 @@ class IrInterpreter {
     println(program)
     val functions = splitProgramIntoFunctions(program)
     val mainFunction = functions.find(_.name == "main")
+    val memory = Memory.zeroed(MAX_MEMORY_SIZE)
     implicit val funs = functions
 
     mainFunction match {
       case Some(main) => {
-        this.interpFunction(main, List(), Map(), Memory(Array.ofDim(MAX_MEMORY_SIZE)))
+        this.interpFunction(main, List(), Map(), memory)._1
       }
       case None => {
         throw new RuntimeException("Tried to interpret iR with no main function. Can't interpret a translation unit with no entry point.")
@@ -77,10 +102,10 @@ class IrInterpreter {
 
   // interpret executing this function, given some arguments (which are all 64 bit register values), 
   // and yield the return value of the function, as well as any executed debug stataments.
-  def interpFunction(f: IrFunction, args: List[Long], registersState: Map[Long, Long], memory: Memory)(implicit funs:List[IrFunction]): (Long) = {
-    def helper(ops:Program, regs: Map[Long, Long], mem: Memory): Long = {
+  def interpFunction(f: IrFunction, args: List[Long], registersState: Map[Long, Long], memory: Memory)(implicit funs:List[IrFunction]): (Long, Memory) = {
+    def helper(ops:Program, regs: Map[Long, Long], mem: Memory): (Long, Memory) = {
       ops.head match {
-        case Return(v) => regs.get(v.id).get
+        case Return(v) => (opValue(v, regs), mem)
         case _ => {
           val exec = this.interpInstr(ops.head, regs, mem)
           helper(ops.tail, exec._1, exec._2)
@@ -109,13 +134,22 @@ class IrInterpreter {
       case Call(f, args, result) => {
         val fun = funs.find(_.name == f.id).get
         val x = interpFunction(fun, args.map(op => opValue(op, regs)), regs, mem)
-        ???
+        (regs.updated(result.id, x._1), x._2)
       }
       case Fun(label: Label, params: List[Register], static) => {
         throw RuntimeException("Not expecting Fun instruction here")
       }
       case Return(v) => {
         throw RuntimeException("Not expecting return here")
+      }
+      case Store(v, loc, displacement, index, scale, width) => {
+        val location = regs.get(loc.id).get
+        val indexValue = index match {
+          case None => 1
+          case Some(ind) => regs.get(ind.id).get
+        }
+        val newMem = mem.storeAt(location + displacement + indexValue * scale, opValue(v, regs), width)
+        ???
       }
 
     }
