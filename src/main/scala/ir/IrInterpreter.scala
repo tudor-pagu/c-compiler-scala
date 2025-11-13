@@ -4,6 +4,11 @@ import scala.collection.mutable.ListBuffer
 import IR.LabelDecl
 import tpagu.compiler.ir.IR.Fun
 import tpagu.compiler.ir.IR.Return
+import tpagu.compiler.ir.IR.Add
+import tpagu.compiler.ir.IR.Mult
+import tpagu.compiler.ir.IR.Neg
+import tpagu.compiler.ir.IR.Mov
+import tpagu.compiler.ir.IR.Call
 /**
  * We include an IR interpreter for two reasons:
  * 1. It is useful for tests
@@ -57,6 +62,8 @@ class IrInterpreter {
     println(program)
     val functions = splitProgramIntoFunctions(program)
     val mainFunction = functions.find(_.name == "main")
+    implicit val funs = functions
+
     mainFunction match {
       case Some(main) => {
         this.interpFunction(main, List(), Map(), Memory(Array.ofDim(MAX_MEMORY_SIZE)))
@@ -70,7 +77,7 @@ class IrInterpreter {
 
   // interpret executing this function, given some arguments (which are all 64 bit register values), 
   // and yield the return value of the function, as well as any executed debug stataments.
-  def interpFunction(f: IrFunction, args: List[Long], registersState: Map[Long, Long], memory: Memory): (Long) = {
+  def interpFunction(f: IrFunction, args: List[Long], registersState: Map[Long, Long], memory: Memory)(implicit funs:List[IrFunction]): (Long) = {
     def helper(ops:Program, regs: Map[Long, Long], mem: Memory): Long = {
       ops.head match {
         case Return(v) => regs.get(v.id).get
@@ -84,8 +91,34 @@ class IrInterpreter {
     helper(f.body, newRegisters, memory)
   }
 
-  def interpInstr(i: Instruction, registersState: Map[Long, Long], memory: Memory):(Map[Long,Long], Memory) = {
-    ???
+  // operand to value
+  def opValue(op:Operand, regs:Map[Long,Long]) = op match {
+    case Immediate(value) => value
+    case Label(_) => throw RuntimeException("Cannot get value of label")
+    case Register(id) => regs.get(id).get
+  }
+
+  // instruction will never be return, that is handled separately
+  def interpInstr(i: Instruction, regs: Map[Long, Long], mem: Memory)(implicit funs:List[IrFunction]):(Map[Long,Long], Memory) = {
+    i match {
+      case Add(l, r, result) => (regs.updated(result.id, opValue(l, regs) + opValue(r, regs)) , mem)
+      case Mult(l, r, result) => (regs.updated(result.id, opValue(l, regs) * opValue(r, regs)) , mem)
+      case Neg(v, result) => (regs.updated(result.id, -opValue(v, regs)), mem)
+      case Mov(src, dst) => (regs.updated( dst.id , opValue(src, regs) ), mem)
+      case LabelDecl(label) => (regs, mem)
+      case Call(f, args, result) => {
+        val fun = funs.find(_.name == f.id).get
+        val x = interpFunction(fun, args.map(op => opValue(op, regs)), regs, mem)
+        ???
+      }
+      case Fun(label: Label, params: List[Register], static) => {
+        throw RuntimeException("Not expecting Fun instruction here")
+      }
+      case Return(v) => {
+        throw RuntimeException("Not expecting return here")
+      }
+
+    }
   }
 
   def splitProgramIntoFunctions(program: Program):List[IrFunction] = {
