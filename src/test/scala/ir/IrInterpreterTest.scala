@@ -72,16 +72,64 @@ class IrInterpreterTest extends FunSuite {
   }
 
 
-  // test("test 1") {
-  //   irInterpHelper(
-  //     """
-  //     int foo(int x) {
-  //       return x + 1;
-  //     }
-  //     int main() {
-  //       return 1;
-  //     }
-  //     """,1)
-  // }
-  //
+  test("test 1") {
+    irInterpHelper(
+      """
+      int foo(int x) {
+        return x + 1;
+      }
+      int main() {
+        return 1;
+      }
+      """,1)
+  }
+
+  test("test 2") {
+    irInterpHelper(
+      """
+      int foo(int x) {
+        return x + 1;
+      }
+      int main() {
+        return 2;
+      }
+      """,2)
+  }
+
+  test("test 3") {
+    irInterpHelper(
+      """
+      int foo(int x) {
+        return x + 1;
+      }
+      int main() {
+        return foo(1);
+      }
+      """,2)
+  }
+
+  test("test 4") {
+    irInterpHelper(
+      """
+      int foo(int x) {
+        return x + 1;
+      }
+      int main() {
+        int x = 5;
+        return foo(x);
+      }
+      """,6)
+
+    irInterpHelper(
+      """
+      int foo(int x, int y) {
+        return x + 1;
+      }
+      int main() {
+        int x = 5;
+        return foo(x, x);
+      }
+      """,6)
+  }
+
 }

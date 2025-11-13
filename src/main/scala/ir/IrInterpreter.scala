@@ -19,7 +19,7 @@ import tpagu.compiler.ir.IR.Alloc
   */
 type DebugValues = List[Long]
 
-val MAX_MEMORY_SIZE = 268435456 // 256 MB
+val MAX_MEMORY_SIZE = 10000
 
 private class IrFunction(val name: String, val decl: Fun, val body: Program)
 

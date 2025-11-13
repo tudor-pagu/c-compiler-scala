@@ -134,32 +134,60 @@ return r10
       }
       """,
       """
- foo(r1, r2):                                                                                                                                                   
-r1 <= alloc(4, 4)                                                                                                                                              
-r2 <= alloc(4, 4)
-load [r1] => r3
-load [r2] => r4
-r5 <= r3 + r4
-return r5
+foo(r1, r2):
+r3 <= alloc(4, 4)
+store r1 => [r3]
+r4 <= alloc(4, 4)
+store r2 => [r4]
+load [r3] => r5
+load [r4] => r6
+r7 <= r5 + r6
+return r7
 main():
-r6 <= alloc(4, 4)
-store $2 => [r6]
-r7 <= alloc(4, 4)
-store $3 => [r7]
 r8 <= alloc(4, 4)
-load [r6] => r9
-load [r7] => r10
-r11 <= foo(r9, r10)
-store r11 => [r8]
-load [r8] => r12
-return r12
+store $2 => [r8]
+r9 <= alloc(4, 4)
+store $3 => [r9]
+r10 <= alloc(4, 4)
+load [r8] => r11
+load [r9] => r12
+r13 <= foo(r11, r12)
+store r13 => [r10]
+load [r10] => r14
+return r14 
 """
     )
   }
 
 
-  // test("test 2") {
-  //   irGen
-  // }
+  test("test foo with same param") {
+    irGenHelper("""
+      int foo(int x, int y) {
+        return x + 1;
+      }
+      int main() {
+        int x = 5;
+        return foo(x, x);
+      }
+      """,
+"""
+foo(r1, r2):
+r3 <= alloc(4, 4)
+store r1 => [r3]
+r4 <= alloc(4, 4)
+store r2 => [r4]
+load [r3] => r5
+r6 <= r5 + $1
+return r6
+main():
+r7 <= alloc(4, 4)
+store $5 => [r7]
+load [r7] => r8
+load [r7] => r9
+r10 <= foo(r8, r9)
+return r10
+"""
+      )
+  }
 
 }

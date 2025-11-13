@@ -46,6 +46,10 @@ class IRGenerator(
   def withNewVariableMap(name: String, register: Register):IRGenerator = {
     IRGenerator(lastRegister, variableMap.updated(name, register), functionMap)
   }
+
+  def withNewVariableMap(newMap:Map[String, Register]):IRGenerator = {
+    IRGenerator(lastRegister, newMap, functionMap)
+  }
   
   def withNewFunMap(name: String, label: Label):IRGenerator = {
     IRGenerator(lastRegister, variableMap, functionMap.updated(name, label))
@@ -53,6 +57,17 @@ class IRGenerator(
 
   def getNewRegister(): (Register, IRGenerator) = {
     (Register(lastRegister + 1), IRGenerator(lastRegister + 1, variableMap, functionMap))
+  }
+
+  def getNewRegisters(n: Int): (List[Register], IRGenerator) = {
+    if (n == 0) then {
+      return (List(), this)
+    }
+
+    val registers = (lastRegister + 1).to(lastRegister + n).map(id => Register(id)).toList
+    assert(registers.size == n)
+    assert(registers.last.id == lastRegister + n)
+    (registers, IRGenerator(lastRegister + n, variableMap, functionMap))
   }
   // creates a new expression, possibly by adding more instructions before it.
   // This returns a list of instructions, followed by an operand which will equal the expression
@@ -154,22 +169,35 @@ class IRGenerator(
           case _ => throw RuntimeException("type of function is not FunT.")
         }
 
-        val (ops, registers,ir2) = (paramNames.zip(paramTypes)).foldLeft(List():Program, List():List[Register], this)( (acc, param) => {
-            val (name, t) = param
-            val (newReg, newIr) = acc._3.getNewRegister()
-            // TODO breaks for types with different widths, structs, etc.
-            (acc._1 :+ Alloc(newReg, t.size(), t.alignment()), acc._2 :+ newReg, newIr.withNewVariableMap(name, newReg))
+        assert(paramNames.size == paramTypes.size)
+
+        val (paramRegs, ir2) = this.getNewRegisters(paramNames.size)
+        val (stackParamRegs, ir3) = ir2.getNewRegisters(paramNames.size)
+
+        val addedOps = paramRegs.lazyZip(stackParamRegs).lazyZip(paramTypes).flatMap((paramReg, stackParamReg, t) => {
+          List(
+              Alloc(stackParamReg, t.size(), t.alignment()),
+              Store(paramReg, stackParamReg)
+            )
         })
 
-        val execBody = ir2.lower(body)
+        val addedRegs = paramNames.zip(stackParamRegs).map((paramName, stackParamReg) => {
+          (paramName, stackParamReg)
+        })
+
+        val newRegs = variableMap ++ addedRegs
+
+        val newIr = ir3.withNewVariableMap(newRegs)
+
+        val execBody = newIr.lower(body)
 
         val funLabel = Label(name)
 
         val finalOps = List(
           Fun(
-            funLabel, registers
+            funLabel, paramRegs
             )
-        ) ++ ops ++ execBody._1
+        ) ++ addedOps ++ execBody._1
 
         val finalIrGen = this.withLastRegisterOf(execBody._2)
         (finalOps, finalIrGen)
