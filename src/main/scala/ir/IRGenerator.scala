@@ -122,7 +122,7 @@ class IRGenerator(
             val reg = variableMap(name)
             val (destReg, ir2) = this.getNewRegister()
             val ops = List(
-              IR.Load(reg, destReg)
+              IR.Load(reg, destReg, width = t.size().toInt)
             )
             (ops, destReg, ir2)
           }
@@ -160,7 +160,7 @@ class IRGenerator(
         val reg = nameLookup(leftSide)
         val (ops, op, ir2) = this.produceExpression(rightSide)
         // TODO: breaks for types with different widths, structs, etc.
-        (ops :+ Store(op, reg), ir2)
+        (ops :+ Store(op, reg, width = rightSide.t.size().toInt), ir2)
       }
 
       case FunctionDefinition(name, paramNames, body, ofType) => {
@@ -177,7 +177,7 @@ class IRGenerator(
         val addedOps = paramRegs.lazyZip(stackParamRegs).lazyZip(paramTypes).flatMap((paramReg, stackParamReg, t) => {
           List(
               Alloc(stackParamReg, t.size(), t.alignment()),
-              Store(paramReg, stackParamReg)
+              Store(paramReg, stackParamReg, width=t.size().toInt)
             )
         })
 
