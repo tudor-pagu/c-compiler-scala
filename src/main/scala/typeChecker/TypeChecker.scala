@@ -193,7 +193,7 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit span: Span)
     case TSpecifier(t) => t
     case _ => throw RuntimeException("Unreachable code!")
   }
-  l.headOption.getOrElse({println("tpagu bad"); throw createError("No valid type specifier found in declaration.",span);})
+  l.headOption.getOrElse({throw createError("No valid type specifier found in declaration.",span);})
 
 def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type = getTypeOfDeclaration(
   declaration.declarationSpecifiers,

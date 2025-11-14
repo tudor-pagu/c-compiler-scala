@@ -90,7 +90,6 @@ class IrInterpreter {
   // function. In my IR, all functions must return exactly on register
   // sized value. If no value is explicitly returned, 0 is implicitly returned.
   def interp(program: Program): (Long) = {
-    println(program)
     val functions = splitProgramIntoFunctions(program)
     val mainFunction = functions.find(_.name == "main")
     val memory = Memory.zeroed(MAX_MEMORY_SIZE)
