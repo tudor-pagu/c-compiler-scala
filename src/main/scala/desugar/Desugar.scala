@@ -24,7 +24,7 @@ object Desugar {
           case BinaryOp.Add => Add(desugar(l), desugar(r), typeMap.get(e))
           case BinaryOp.Sub => Add(desugar(l), Neg(desugar(r), typeMap.get(r)), typeMap.get(e))
           // TODO add more
-          case _ => ???
+          case BinaryOp.Mult => Mult(desugar(l), desugar(r), typeMap.get(e))
         }
       case AstExtKind.PrefixOperation(op, inner) => 
         op match {

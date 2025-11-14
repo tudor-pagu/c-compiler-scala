@@ -130,6 +130,18 @@ class IrInterpreterTest extends FunSuite {
         return foo(x, x);
       }
       """,6)
+
+    irInterpHelper(
+      """
+      int sum(int x, int y) {
+        return x + y;
+      }
+      int main() {
+        int x = 5;
+        int y = x * 2;
+        return sum(x, y);
+      }
+      """,15)
   }
 
 }
