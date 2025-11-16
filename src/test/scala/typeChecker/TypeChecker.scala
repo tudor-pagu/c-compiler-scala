@@ -322,6 +322,45 @@ class TypeCheckerTest extends FunSuite {
       """,
       ""
     )
+
+    expectTypeError(
+      """ 
+      int f() {
+      }
+      int main() {
+        int x = 2;
+        int y;
+        y = x = f;
+      }
+      """,
+      ""
+    )
+    
+    expectTypeError(
+      """ 
+      int f() {
+      }
+      int main() {
+        int x = 2;
+        int y;
+        x = y = f;
+      }
+      """,
+      ""
+    )
+
+    expectTypeError(
+      """ 
+      int f() {
+      }
+      int main() {
+        int x = 2;
+        int y;
+        f = y = x;
+      }
+      """,
+      ""
+    )
   }
 
   test("expect type checker pass assignment") {
@@ -337,6 +376,30 @@ class TypeCheckerTest extends FunSuite {
         int x = 1;
         int y = 2;
         y = x;
+      }
+      """)
+
+    expectTypePass(""" 
+      int main() {
+        int x = 1;
+        int y = 2;
+        y = x = y;
+      }
+      """)
+    
+    expectTypePass(""" 
+      int main() {
+        int x = 1;
+        int y = 2;
+        x = x;
+      }
+      """)
+
+    expectTypePass(""" 
+      int main() {
+        int x = 1;
+        int y,z;
+        y = z = x;
       }
       """)
   }
