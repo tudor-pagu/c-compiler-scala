@@ -4,6 +4,7 @@ import IR.{Alloc, Fun, Store}
 import tpagu.compiler.*
 import tpagu.compiler.desugar.*
 import tpagu.compiler.typeChecker.{FunT, NumT}
+import tpagu.compiler.ir.IR.Load
 
 def isValidWidth(width:Int) = width == 1 || width == 2 || width == 4 || width == 8
 object IRGenerator {
@@ -134,6 +135,16 @@ class IRGenerator(
         }
 
       }
+
+      case Assignment(leftSide, rightSide) => {
+        val loweredAssignment= lower(e)
+        val leftAddr = getAddressOfLvalue(leftSide)
+        val (destReg, ir2) = loweredAssignment._2.getNewRegister()
+        // we want to return a register containing the value we're assigning to.
+        val ops = loweredAssignment._1 :+ Load(leftAddr, destReg, width=leftSide.t.size().toInt)
+        (ops, destReg, ir2)
+      }
+
       case _ => {
         throw RuntimeException(
           "Tried to produce expression for non-expression ast node."
@@ -246,7 +257,6 @@ class IRGenerator(
         (innerOps, innerIrGen)
 
       }
-
     }
   }
 

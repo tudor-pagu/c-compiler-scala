@@ -159,9 +159,55 @@ return r14
     )
   }
 
+  test("assignment tests") {
+    irGenHelper(
+      """
+      int main() {
+        int x,y = 1;
+        x = y;
+        return x;
+      }
+      """,
+      """
+main():
+r1 <= alloc(4, 4)
+r2 <= alloc(4, 4)
+store $1 => [r2]
+load [r2] => r3
+store r3 => [r1]
+load [r1] => r4
+return r4
+      """
+    )
+
+    irGenHelper(
+      """
+      int main() {
+        int x,y,z = 1;
+        x = y = z;
+        return y;
+      }
+      """,
+      """
+main():
+r1 <= alloc(4, 4)
+r2 <= alloc(4, 4)
+r3 <= alloc(4, 4)
+store $1 => [r3]
+load [r3] => r4
+store r4 => [r2]
+load [r2] => r5
+store r5 => [r1]
+load [r2] => r6
+return r6
+      """
+    )
+
+  }
 
   test("test foo with same param") {
-    irGenHelper("""
+    irGenHelper(
+      """
       int foo(int x, int y) {
         return x + 1;
       }
@@ -170,7 +216,7 @@ return r14
         return foo(x, x);
       }
       """,
-"""
+      """
 foo(r1, r2):
 r3 <= alloc(4, 4)
 store r1 => [r3]
@@ -187,7 +233,7 @@ load [r7] => r9
 r10 <= foo(r8, r9)
 return r10
 """
-      )
+    )
   }
 
 }
