@@ -125,7 +125,7 @@ class TypeCheck {
               e.span
             )
           )
-          newNv = nv + (name -> declaredType)
+          newNv = newNv + (name -> declaredType)
         }
         (NoneT(), newNv)
       }
