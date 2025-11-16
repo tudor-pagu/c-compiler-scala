@@ -32,13 +32,13 @@ class IrInterpreterTest extends FunSuite {
   test("memory test 1") {
     var mem = Memory.zeroed(256)
     mem = mem.storeAt(0, 10, 8)
-    assertEquals(mem.loadAt(0,8), 10L)
+    assertEquals(mem.loadAt(0, 8), 10L)
   }
-  
+
   test("memory test 2") {
     var mem = Memory.zeroed(256)
     mem = mem.storeAt(0, 127, 1)
-    assertEquals(mem.loadAt(0,8), 127L)
+    assertEquals(mem.loadAt(0, 8), 127L)
   }
 
   test("memory test 3") {
@@ -47,10 +47,10 @@ class IrInterpreterTest extends FunSuite {
     // we expect this to write
     // | 1000 000 | 0x00 | 0x00
     // to memory
-    assertEquals(mem.loadAt(0,1), -128L)
-    assertEquals(mem.loadAt(0,2), 128L)
-    assertEquals(mem.loadAt(0,4), 128L)
-    assertEquals(mem.loadAt(0,8), 128L)
+    assertEquals(mem.loadAt(0, 1), -128L)
+    assertEquals(mem.loadAt(0, 2), 128L)
+    assertEquals(mem.loadAt(0, 4), 128L)
+    assertEquals(mem.loadAt(0, 8), 128L)
   }
 
   test("memory test 4") {
@@ -59,18 +59,17 @@ class IrInterpreterTest extends FunSuite {
     // we expect this to write
     // | 0xFF | 0x00 | 0x00
     // to memory
-    assertEquals(mem.loadAt(0,1), -1L)
-    assertEquals(mem.loadAt(0,2), 255L)
-    assertEquals(mem.loadAt(0,4), 255L)
-    assertEquals(mem.loadAt(0,8), 255L)
+    assertEquals(mem.loadAt(0, 1), -1L)
+    assertEquals(mem.loadAt(0, 2), 255L)
+    assertEquals(mem.loadAt(0, 4), 255L)
+    assertEquals(mem.loadAt(0, 8), 255L)
   }
 
   test("memory test 5") {
     var mem = Memory.zeroed(256)
     mem = mem.storeAt(0, -1, 2)
-    assertEquals(mem.loadAt(0,1), -1L)
+    assertEquals(mem.loadAt(0, 1), -1L)
   }
-
 
   test("test 1") {
     irInterpHelper(
@@ -81,7 +80,9 @@ class IrInterpreterTest extends FunSuite {
       int main() {
         return 1;
       }
-      """,1)
+      """,
+      1
+    )
   }
 
   test("test 2") {
@@ -93,7 +94,9 @@ class IrInterpreterTest extends FunSuite {
       int main() {
         return 2;
       }
-      """,2)
+      """,
+      2
+    )
   }
 
   test("test 3") {
@@ -105,7 +108,9 @@ class IrInterpreterTest extends FunSuite {
       int main() {
         return foo(1);
       }
-      """,2)
+      """,
+      2
+    )
   }
 
   test("test 4") {
@@ -118,7 +123,9 @@ class IrInterpreterTest extends FunSuite {
         int x = 5;
         return foo(x);
       }
-      """,6)
+      """,
+      6
+    )
 
     irInterpHelper(
       """
@@ -129,7 +136,9 @@ class IrInterpreterTest extends FunSuite {
         int x = 5;
         return foo(x, x);
       }
-      """,6)
+      """,
+      6
+    )
 
     irInterpHelper(
       """
@@ -141,7 +150,9 @@ class IrInterpreterTest extends FunSuite {
         int y = x * 2;
         return sum(x, y);
       }
-      """,15)
+      """,
+      15
+    )
   }
 
   test("test assignment") {
@@ -152,8 +163,9 @@ class IrInterpreterTest extends FunSuite {
         x = 3;
         return x;
       }
-      """, 3
-      )
+      """,
+      3
+    )
 
     irInterpHelper(
       """ 
@@ -163,8 +175,9 @@ class IrInterpreterTest extends FunSuite {
         x = 4;
         return x;
       }
-      """, 4
-      )
+      """,
+      4
+    )
 
     irInterpHelper(
       """ 
@@ -175,8 +188,9 @@ class IrInterpreterTest extends FunSuite {
         y = 4;
         return x;
       }
-      """, 3
-      )
+      """,
+      3
+    )
 
     irInterpHelper(
       """ 
@@ -190,8 +204,9 @@ class IrInterpreterTest extends FunSuite {
         y = 4;
         return sum(x,y);
       }
-      """, 7
-      )
+      """,
+      7
+    )
 
     irInterpHelper(
       """ 
@@ -204,8 +219,9 @@ class IrInterpreterTest extends FunSuite {
         x = y;
         return x;
       }
-      """, 1
-      )
+      """,
+      1
+    )
 
     irInterpHelper(
       """ 
@@ -218,8 +234,9 @@ class IrInterpreterTest extends FunSuite {
         x = y;
         return y;
       }
-      """, 1
-      )
+      """,
+      1
+    )
 
     irInterpHelper(
       """ 
@@ -232,9 +249,39 @@ class IrInterpreterTest extends FunSuite {
         x = y = z;
         return sum(x,z);
       }
-      """, 10
+      """,
+      10
+    )
+
+    irInterpHelper(
+      """ 
+      int sum(int x, int y) {
+        return x + y;
+      }
+      int main() {
+        int x = 2;
+        int y = 1,z = 5;
+        x = y = z;
+        z = 1;
+        return sum(x,z);
+      }
+      """,
+      6
+    )
+
+    irInterpHelper(
+      """
+      int f(int x) {
+        x = 1;
+        return 0;
+      }
+      int main() {
+        int x = 3;
+        f(x);
+        return x;
+      }
+      """,3
       )
   }
-
 
 }
