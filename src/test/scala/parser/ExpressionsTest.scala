@@ -287,4 +287,11 @@ class ParserTest extends FunSuite {
       "Id(a){Call([Int(2)])}{Call([Int(3)])}"
     )
   }
+
+  test("assignment") {
+    assertEquals(
+      parseExpression("a = 2"),
+      "Assignment(Id(a), Int(2))"
+      )
+  }
 }

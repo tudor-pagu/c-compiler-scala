@@ -31,14 +31,14 @@ def lookupType(identifier: AstExt, env: TypeEnvironment): Type =
     case _ => throw new RuntimeException("lookupType called on non-identifier")
   }
 
-
 object TypeCheck {
-  def typeOf(e: AstExt, nv: TypeEnvironment): (Type, TypeEnvironment) = TypeCheck().typeOf(e, nv)
+  def typeOf(e: AstExt, nv: TypeEnvironment): (Type, TypeEnvironment) =
+    TypeCheck().typeOf(e, nv)
 }
 
 class TypeCheck {
   // typeMap gives hints to the desugarer when creating the typed, core AST.
-  var typeMap : IdentityHashMap[AstExt, Type] = IdentityHashMap()
+  var typeMap: IdentityHashMap[AstExt, Type] = IdentityHashMap()
 
   def typeOf(e: AstExt, nv: TypeEnvironment): (Type, TypeEnvironment) =
     implicit val span: Span = e.span
@@ -98,7 +98,10 @@ class TypeCheck {
               returnType
             }
             case (op, t) =>
-              throw createError(s"Tried to call non-function type: ${t.toString}", e.span)
+              throw createError(
+                s"Tried to call non-function type: ${t.toString}",
+                e.span
+              )
           },
           nv
         )
@@ -109,7 +112,10 @@ class TypeCheck {
           val declaredType = getTypeOfDeclaration(declSpecifiers, declarator)
           init.map(initValue => {
             if (typeOf(initValue, nv)._1 != declaredType) {
-              throw createError("Type of initializer did not match declared type.", e.span)
+              throw createError(
+                "Type of initializer did not match declared type.",
+                e.span
+              )
             }
           })
 
@@ -132,7 +138,7 @@ class TypeCheck {
           )
         )
         declarationType match {
-          case func@FunT(_, _) => {}
+          case func @ FunT(_, _) => {}
           case t =>
             throw createError(
               s"Expected function type in function declaration, but got ${t}. This is probably a bug in the parser.",
@@ -156,6 +162,23 @@ class TypeCheck {
           nv
         )
       }
+      case AstExtKind.Assignment(left, right) => {
+        val (typeLeft, nv1) = typeOf(left, nv)
+        val (typeRight, nv2) = typeOf(right, nv1)
+        if !ValueCategoryChecker.isLvalue(left, typeMap) then {
+          throw createError(s"Trying to assign to non-lvalue.", left.span)
+        }
+
+        if typeLeft != typeRight then {
+          throw createError(
+            s"Type mismatch in assignment. You're trying to assign ${typeLeft} to ${typeRight}",
+            e.span
+          )
+        }
+
+        (typeRight, nv2)
+      }
+
       case AstExtKind.TranslationUnit(statements) => {
         val check = statements.foldLeft[TypeEnvironment](nv) {
           (accNv, statement) =>
@@ -184,21 +207,27 @@ class TypeCheck {
 
 }
 
+def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
+    span: Span
+): Type =
+  val l = declSpecifiers
+    .filter {
+      case TSpecifier(t) => true
+      case _             => false
+    }
+    .map {
+      case TSpecifier(t) => t
+      case _             => throw RuntimeException("Unreachable code!")
+    }
+  l.headOption.getOrElse({
+    throw createError("No valid type specifier found in declaration.", span);
+  })
 
-def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit span: Span): Type =
-  val l = declSpecifiers.filter { 
-    case TSpecifier(t) => true
-    case _ => false
-  }.map {
-    case TSpecifier(t) => t
-    case _ => throw RuntimeException("Unreachable code!")
-  }
-  l.headOption.getOrElse({throw createError("No valid type specifier found in declaration.",span);})
-
-def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type = getTypeOfDeclaration(
-  declaration.declarationSpecifiers,
-  declaration.declarator
-)
+def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type =
+  getTypeOfDeclaration(
+    declaration.declarationSpecifiers,
+    declaration.declarator
+  )
 
 def getTypeOfDeclaration(
     declSpecifiers: List[DeclarationSpecifier],
@@ -221,14 +250,24 @@ def getNameOfDeclarator(declarator: Declarator): Option[String] =
     case DirectDeclarator.InnerDeclarator(decl) => getNameOfDeclarator(decl)
   }
 
-def getParameterMappings(f: Declaration)(implicit span: Span): Map[String, Type] = f.declarator.direct match {
+def getParameterMappings(
+    f: Declaration
+)(implicit span: Span): Map[String, Type] = f.declarator.direct match {
   case DirectDeclarator.Function(name, params) => {
     val x = params
       .filter(decl => decl.declarator.direct.getName().isDefined)
-      .map(decl => (decl.declarator.direct.getName()
-      .getOrElse(throw new RuntimeException("impossible")), getTypeOfDeclaration(decl)))
+      .map(decl =>
+        (
+          decl.declarator.direct
+            .getName()
+            .getOrElse(throw new RuntimeException("impossible")),
+          getTypeOfDeclaration(decl)
+        )
+      )
     x.toMap
   }
-  case _ => throw new RuntimeException("unreachable code - called getParameterMappings with non function declaration")
+  case _ =>
+    throw new RuntimeException(
+      "unreachable code - called getParameterMappings with non function declaration"
+    )
 }
-

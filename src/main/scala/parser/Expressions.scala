@@ -2,11 +2,15 @@ package tpagu.compiler.parser
 import tpagu.compiler.lexer.{Lexer, Token, TokenInfo}
 import tpagu.compiler.{CompilerError, Spanned}
 import tpagu.compiler.Span
+import tpagu.compiler.parser.AstExtKind.Assignment
 
-def parserError(msg:String, span: Span):CompilerError = CompilerError(msg, span)
+def parserError(msg: String, span: Span): CompilerError =
+  CompilerError(msg, span)
 
 def expression: ParseRule[AstExt] =
-  primaryExpression
+  // we need to put assignment first so it tries to parse the longer one first,
+  // otherwise it would give up after parsing the first primaryExpression of an assignment.
+  assignmentExpression <|> primaryExpression
 
 def literal: ParseRule[AstExt] = {
   new ParseRule[AstExt] {
@@ -17,8 +21,10 @@ def literal: ParseRule[AstExt] = {
       res match {
         case Left(err) => Left(err)
         // TODO: Handle string and char literals, including escaping, etc.
-        case Right(TokenInfo(Token.Number(num), span), lexer2) => Right(Spanned(AstExtKind.IntLiteral(num.toInt), span), lexer2)
-        case Right(TokenInfo(_, span), _) => Left(parserError("Could not parse literal.", span))
+        case Right(TokenInfo(Token.Number(num), span), lexer2) =>
+          Right(Spanned(AstExtKind.IntLiteral(num.toInt), span), lexer2)
+        case Right(TokenInfo(_, span), _) =>
+          Left(parserError("Could not parse literal.", span))
       }
     }
   }.named("literal")
@@ -33,8 +39,10 @@ def identifier: ParseRule[AstExt] = {
       res match {
         case Left(err) => Left(err)
         // TODO: Handle string and char literals, including escaping, etc.
-        case Right(TokenInfo(Token.Identifier(name), span), lexer2) => Right(Spanned(AstExtKind.Identifier(name), span), lexer2)
-        case Right(TokenInfo(_, span), _) => Left(parserError("Could not parse identifier.", span))
+        case Right(TokenInfo(Token.Identifier(name), span), lexer2) =>
+          Right(Spanned(AstExtKind.Identifier(name), span), lexer2)
+        case Right(TokenInfo(_, span), _) =>
+          Left(parserError("Could not parse identifier.", span))
       }
     }
   }.named("identifier")
@@ -50,9 +58,8 @@ def atom: ParseRule[AstExt] = {
   (exprParser <|> literal <|> identifier).named("atom")
 }
 
-
 def postfixOperation: ParseRule[PostfixOp] =
-  //TODO add lexer support for ++ and -- and []
+  // TODO add lexer support for ++ and -- and []
 
   def arg = for {
     _ <- Just(Token.Comma)
@@ -75,16 +82,23 @@ def postfixOperation: ParseRule[PostfixOp] =
     Right(PostfixOp.FunctionCall(Nil))
   }).named("functionCallWithoutArgs")
 
-
   functionCallWithArgs <|> functionCallWithoutArgs
-   
+
 // postfixExpression -> atom {postfixOperation}*
-def postfixExpression: ParseRule[AstExt] = 
+def postfixExpression: ParseRule[AstExt] =
   for {
     expr <- atom
     postfixOperations <- postfixOperation.many
-  } yield postfixOperations.foldLeft[Either[CompilerError, AstExt]](Right(expr)) {
-    case (Right(acc), op) => Right(Spanned(AstExtKind.PostfixOperation(op, acc), Span.merge(acc.span, expr.span)))
+  } yield postfixOperations.foldLeft[Either[CompilerError, AstExt]](
+    Right(expr)
+  ) {
+    case (Right(acc), op) =>
+      Right(
+        Spanned(
+          AstExtKind.PostfixOperation(op, acc),
+          Span.merge(acc.span, expr.span)
+        )
+      )
     case (Left(err), _) => Left(err)
   }
 
@@ -161,4 +175,16 @@ def primaryExpression: ParseRule[AstExt] = {
               Left(CompilerError("Invalid binary operation", opToken.span))
           }
   }).named("primaryExpression")
+}
+
+def assignmentExpression: ParseRule[AstExt] = {
+  (for {
+    // interesting trick here to get the recursive descent parser to work:
+    // the first thing cant be expression to not cause an infinite loop. Doing primaryExpression here prevents that.
+    left <- primaryExpression
+    _ <- Just(Token.Assign)
+    right <- expression
+  } yield Right(Assignment(left, right)))
+    .named("assignment expression")
+    .withSpan
 }

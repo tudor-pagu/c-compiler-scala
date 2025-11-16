@@ -142,6 +142,11 @@ class IRGenerator(
     }
   }
 
+  def getAddressOfLvalue(e: AstC): Register = e match {
+    case Identifier(name, t) => variableMap.get(name).get
+    case _ => throw RuntimeException(s"Did not manage to get address of expression ${e}, maybe its not an lvalue.")
+  }
+
   def lower(e: AstC): (List[Instruction], IRGenerator) = {
     e match {
       // evaluate the expression, in case it has side effects,
@@ -157,7 +162,7 @@ class IRGenerator(
         ), ir2.withNewVariableMap(name, reg))
       }
       case Assignment(leftSide, rightSide) => {
-        val reg = nameLookup(leftSide)
+        val reg = getAddressOfLvalue(leftSide)
         val (ops, op, ir2) = this.produceExpression(rightSide)
         // TODO: breaks for types with different widths, structs, etc.
         (ops :+ Store(op, reg, width = rightSide.t.size().toInt), ir2)

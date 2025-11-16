@@ -144,4 +144,83 @@ class IrInterpreterTest extends FunSuite {
       """,15)
   }
 
+  test("test assignment") {
+    irInterpHelper(
+      """ 
+      int main() {
+        int x = 2;
+        x = 3;
+        return x;
+      }
+      """, 3
+      )
+
+    irInterpHelper(
+      """ 
+      int main() {
+        int x = 2;
+        x = 3;
+        x = 4;
+        return x;
+      }
+      """, 4
+      )
+
+    irInterpHelper(
+      """ 
+      int main() {
+        int x = 2;
+        int y = 1;
+        x = 3;
+        y = 4;
+        return x;
+      }
+      """, 3
+      )
+
+    irInterpHelper(
+      """ 
+      int sum(int x, int y) {
+        return x + y;
+      }
+      int main() {
+        int x = 2;
+        int y = 1;
+        x = 3;
+        y = 4;
+        return sum(x,y);
+      }
+      """, 7
+      )
+
+    irInterpHelper(
+      """ 
+      int sum(int x, int y) {
+        return x + y;
+      }
+      int main() {
+        int x = 2;
+        int y = 1;
+        x = y;
+        return x;
+      }
+      """, 1
+      )
+
+    irInterpHelper(
+      """ 
+      int sum(int x, int y) {
+        return x + y;
+      }
+      int main() {
+        int x = 2;
+        int y = 1;
+        x = y;
+        return y;
+      }
+      """, 1
+      )
+  }
+
+
 }

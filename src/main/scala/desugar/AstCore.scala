@@ -17,7 +17,7 @@ case class Neg(e:AstC, t: Type) extends AstC
 case class FunctionCall(callee: AstC, args: List[AstC], t: Type) extends AstC
 case class Identifier(name: String, t: Type) extends AstC
 
-case class Assignment(leftSide:String, rightSide: AstC) extends AstC {
+case class Assignment(leftSide:AstC, rightSide: AstC) extends AstC {
   def t:Type = rightSide.t
 }
 

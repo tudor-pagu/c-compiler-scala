@@ -35,9 +35,10 @@ class TypeCheckerTest extends FunSuite {
       fail("Did not fail the type checker.")
     } catch {
       case c @ CompilerError(msg, span, _) => {
-        assert(
-          msg.contains(expectedContains),
-          s"""
+        if (!expectedContains.isBlank()) {
+          assert(
+            msg.contains(expectedContains),
+            s"""
         |Expected error message to contain:
         |  '$expectedContains'
         |But got:
@@ -47,7 +48,8 @@ class TypeCheckerTest extends FunSuite {
         |$input
         with span: ${span.start} -> ${span.end}
         """.stripMargin
-        )
+          )
+        }
       }
       case x => throw x
     }
@@ -173,10 +175,9 @@ class TypeCheckerTest extends FunSuite {
       "Tried to call a function with 1 arguments, when the function takes 0 parameters"
     )
   }
-  
+
   test("Complex call") {
-    expectTypePass(
-      """
+    expectTypePass("""
       int f() {
         return 5;
       }
@@ -201,12 +202,13 @@ class TypeCheckerTest extends FunSuite {
       int main() {
         int y = c(f(2), c(2, 3));
       }
-      """, "")
+      """,
+      ""
+    )
   }
 
   test("Complex call 2") {
-    expectTypePass(
-      """
+    expectTypePass("""
       int f() {
         return f() + 5;
       }
@@ -233,9 +235,11 @@ class TypeCheckerTest extends FunSuite {
         int y = c(f(), c(c(4,5), 3));
         int x = c(c, y);
       }
-      """, "")
+      """,
+      ""
+    )
   }
-  
+
   test("Complex call failure 3") {
     expectTypeError(
       """
@@ -249,12 +253,13 @@ class TypeCheckerTest extends FunSuite {
       int main() {
         int x = g(f);
       }
-      """, "")
+      """,
+      ""
+    )
   }
 
   test("Inner declarations shadow outer ones.") {
-    expectTypePass(
-      """
+    expectTypePass("""
       int f(int a) {
         return a + 2;
       }
@@ -269,7 +274,6 @@ class TypeCheckerTest extends FunSuite {
       """)
   }
 
-
   test("correct function call 1") {
     expectTypePass(
       """
@@ -281,6 +285,60 @@ class TypeCheckerTest extends FunSuite {
       }
       """
     )
+  }
+
+  test("expect type checker fail assignment") {
+    expectTypeError(
+      """ 
+      int f() {
+      }
+      int main() {
+        int x;
+        x = f;
+      }
+      """,
+      ""
+    )
+
+    expectTypeError(
+      """ 
+      int f() {
+      }
+      int main() {
+        2 = 3;
+      }
+      """,
+      ""
+    )
+
+    expectTypeError(
+      """ 
+      int f() {
+      }
+      int main() {
+        int x;
+        2 = x;
+      }
+      """,
+      ""
+    )
+  }
+
+  test("expect type checker pass assignment") {
+    expectTypePass(""" 
+      int main() {
+        int x = 1;
+        x = 2;
+      }
+      """)
+
+    expectTypePass(""" 
+      int main() {
+        int x = 1;
+        int y = 2;
+        y = x;
+      }
+      """)
   }
 
 }

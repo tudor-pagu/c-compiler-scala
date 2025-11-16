@@ -33,6 +33,9 @@ enum AstExtKind:
   case Block(statements: List[AstExt])
   case TranslationUnit(statements: List[AstExt])
   case ExprStatement(e: AstExt)
+
+  case Assignment(left: AstExt, right: AstExt)
+
   case Nothing
   case Return(e: AstExt)
 
@@ -67,6 +70,7 @@ enum AstExtKind:
       s"ExprStmt(${e.toString})"
     case AstExtKind.Nothing => "Nothing"
     case Return(e)          => s"Return(${e.toString})"
+    case AstExtKind.Assignment(left, right) => s"Assignment($left, $right)"
   }
 
 enum TypeQualifier:

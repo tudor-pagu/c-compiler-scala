@@ -43,7 +43,7 @@ object Desugar {
           val init = initDecl._2.map(i => Desugar.desugar(i))
           val varDef = VarDefinition(initDecl._1.direct.getName().get, declaredType)
           if (init.isDefined) then {
-            Seq(List(varDef, Assignment(initDecl._1.direct.getName().get, init.get)))
+            Seq(List(varDef, Assignment(Identifier(initDecl._1.direct.getName().get, declaredType), init.get)))
           } else {
             varDef
           }
@@ -63,6 +63,7 @@ object Desugar {
       case AstExtKind.ExprStatement(e) => desugar(e)
       case AstExtKind.Nothing => throw RuntimeException("tried to desugar Nothing, this should get filtered out ahead of time.")
       case AstExtKind.Return(e) => Return(desugar(e))
+      case AstExtKind.Assignment(left, right) => Assignment(desugar(left), desugar(right))
     }
   }
 
