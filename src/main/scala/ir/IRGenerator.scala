@@ -162,7 +162,7 @@ class IRGenerator(
     e match {
       // evaluate the expression, in case it has side effects,
       // but ignore the result.
-      case IntLiteral | Add | Mult | Neg | FunctionCall | Identifier => {
+      case IntLiteral(_,_) | Add(_,_,_) | Mult(_,_,_) | Neg(_,_) | FunctionCall(_,_,_) | Identifier(_,_) => {
         val res = produceExpression(e)
         (res._1, res._3)
       }
