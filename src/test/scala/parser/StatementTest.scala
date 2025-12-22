@@ -22,6 +22,14 @@ class StatementTest extends FunSuite {
     }
   }
 
+  def testParseRule[A](input: String, rule:ParseRule[A]) = {
+    val lexer = new Lexer(new File("test.txt", input))
+    rule.parse(lexer) match {
+      case Left(err)       => fail(s"Could not parse translation unit: $err")
+      case Right((ast, _)) => ast.toString()
+    }
+  }
+
   def expectParseError(
       input: String,
       parser: ParseRule[AstExt]
@@ -119,6 +127,22 @@ class StatementTest extends FunSuite {
       ),
       """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ Return(Add(Id(a), Id(b))) })); FuncDef(NumT(4,true) Func(Some(main), []), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); Declaration([Var(Some(c)) = Add(Id(a), Int(5))]); Return(Int(0)) })) })"""
     )
+  }
+
+  test("pointer test") {
+    assertEquals(
+      testParseRule("""
+        *a
+        """, declarator), "*Var(Some(a))"
+      )
+  }
+
+  test("pointer test 2") {
+    assertEquals(
+      testParseRule("""
+        **a
+        """, declarator), "**Var(Some(a))"
+      )
   }
 
 }

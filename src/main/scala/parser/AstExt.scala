@@ -106,14 +106,14 @@ case class Pointer(qualifiers: List[TypeQualifier]) {
   override def toString: String = {
     val quals =
       if (qualifiers.isEmpty) ""
-      else qualifiers.map(_.toString).mkString(" ") + " "
-    s"* $quals"
+      else qualifiers.map(_.toString)
+    s"*$quals"
   }
 }
 
 case class Declarator(pointers: List[Pointer], direct: DirectDeclarator) {
   override def toString: String = {
-    val ptrs = pointers.map(_.toString).mkString(" ")
+    val ptrs = pointers.map(_.toString).mkString("")
     s"$ptrs${direct.toString}"
   }
 }

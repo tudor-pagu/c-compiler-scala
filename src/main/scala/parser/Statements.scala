@@ -17,8 +17,18 @@ def emptyStatement: ParseRule[AstExt] = (for {
 def statement: ParseRule[AstExt] =
   emptyStatement <|> functionDefinition <|> blockStatement <|> declaration <|> expressionStatement <|> returnStatement
 
+def onePointer: ParseRule[Pointer] =
+  (for {
+    _ <- Just(
+      Token.Times
+    ) // for now we dont have type qualifiers like const or whatever.. TODO: Add this
+  } yield Right(Pointer(Nil)))
+
 def declarator: ParseRule[Declarator] =
-  directDeclarator.map(decl => Right(Declarator(Nil, decl)))
+  (for {
+    ptr <- onePointer.many
+    decl <- directDeclarator
+  } yield Right(Declarator(ptr, decl)))
 
 def typeSpecifier: ParseRule[DeclarationSpecifier] =
   new ParseRule[DeclarationSpecifier] {
@@ -55,7 +65,9 @@ def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {
 
 def declaration: ParseRule[AstExt] =
   (for {
-    specs <- declarationSpecifier.repeat(1 until Int.MaxValue) // at least one type specifier is needed for a declaration.
+    specs <- declarationSpecifier.repeat(
+      1 until Int.MaxValue
+    ) // at least one type specifier is needed for a declaration.
     decl <- listOf(initDeclarator)
     _ <- Just(Token.Semicolon)
   } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan
@@ -115,14 +127,17 @@ def functionDefinition: ParseRule[AstExt] =
     declSpecs <- declarationSpecifier.repeat(1 until Int.MaxValue)
     decl <- functionDeclarator
     body <- blockStatement
-  } yield Right(AstExtKind.FunctionDefinition(Declaration(declSpecs, Declarator(Nil, decl)), body)))
-    .withSpan
+  } yield Right(
+    AstExtKind
+      .FunctionDefinition(Declaration(declSpecs, Declarator(Nil, decl)), body)
+  )).withSpan
     .named("function definition")
 
 def translationUnit: ParseRule[AstExt] =
-  statement.many.map(stmts => Right(AstExtKind.TranslationUnit(stmts))).withSpan.named("translation unit") <* Just(Token.EOF)
-
-
+  statement.many
+    .map(stmts => Right(AstExtKind.TranslationUnit(stmts)))
+    .withSpan
+    .named("translation unit") <* Just(Token.EOF)
 
 def returnStatement: ParseRule[AstExt] = (for {
   _ <- Just(Token.Return)
