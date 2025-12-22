@@ -284,4 +284,43 @@ class IrInterpreterTest extends FunSuite {
       )
   }
 
+  test("test pointers") {
+    irInterpHelper(
+      """
+      int main() {
+        int *p;
+        int a = 2;
+        p = &a;
+        return *a;
+      }
+      """,
+      2
+      )
+
+    irInterpHelper(
+      """
+      int main() {
+        int a = 3;
+        int *p = &a;
+        a = 4;
+        return *p;
+      }
+      """, 4,
+      )
+
+    irInterpHelper(
+      """
+      int main() {
+        int a = 2;
+        int *p = &a;
+        int *p2 = &a;
+        a = 3;
+        int c = *p + *p2;
+        return c;
+      }
+      """,
+      6
+      )
+  }
+
 }
