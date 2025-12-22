@@ -21,8 +21,9 @@ def onePointer: ParseRule[Pointer] =
   (for {
     _ <- Just(
       Token.Times
-    ) // for now we dont have type qualifiers like const or whatever.. TODO: Add this
-  } yield Right(Pointer(Nil)))
+    )
+    quals <- typeQualifier.many
+  } yield Right(Pointer(quals)))
 
 def declarator: ParseRule[Declarator] =
   (for {
@@ -46,6 +47,11 @@ def typeSpecifier: ParseRule[DeclarationSpecifier] =
           )
       }
   }.named("type specifier")
+
+def typeQualifier: ParseRule[TypeQualifier] =
+  (for {
+    _ <- Just(Token.Const)
+  } yield Right(TypeQualifier.Const))
 
 def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
   typeSpecifier

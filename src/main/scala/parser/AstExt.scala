@@ -106,7 +106,7 @@ case class Pointer(qualifiers: List[TypeQualifier]) {
   override def toString: String = {
     val quals =
       if (qualifiers.isEmpty) ""
-      else qualifiers.map(_.toString)
+      else "(" + qualifiers.map(_.toString).mkString(",") + ")"
     s"*$quals"
   }
 }

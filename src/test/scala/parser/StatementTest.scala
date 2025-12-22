@@ -22,7 +22,7 @@ class StatementTest extends FunSuite {
     }
   }
 
-  def testParseRule[A](input: String, rule:ParseRule[A]) = {
+  def testParseRule[A](input: String, rule: ParseRule[A]) = {
     val lexer = new Lexer(new File("test.txt", input))
     rule.parse(lexer) match {
       case Left(err)       => fail(s"Could not parse translation unit: $err")
@@ -131,18 +131,69 @@ class StatementTest extends FunSuite {
 
   test("pointer test") {
     assertEquals(
-      testParseRule("""
+      testParseRule(
+        """
         *a
-        """, declarator), "*Var(Some(a))"
-      )
+        """,
+        declarator
+      ),
+      "*Var(Some(a))"
+    )
   }
 
   test("pointer test 2") {
     assertEquals(
-      testParseRule("""
+      testParseRule(
+        """
         **a
-        """, declarator), "**Var(Some(a))"
-      )
+        """,
+        declarator
+      ),
+      "**Var(Some(a))"
+    )
+  }
+
+  test("pointer test const") {
+    assertEquals(
+      testParseRule(
+        """
+        *const a
+        """,
+        declarator
+      ),
+      "*(const)Var(Some(a))"
+    )
+    assertEquals(
+      testParseRule(
+        """
+        *const const a
+        """,
+        declarator
+      ),
+      "*(const,const)Var(Some(a))"
+    )
+
+    assertEquals(
+      testParseRule(
+        """
+        *const * const a
+        """,
+        declarator
+      ),
+      "*(const)*(const)Var(Some(a))"
+    )
+
+    // we want to make sure the lexer doesnt split the consts by iteslf.
+    assertNotEquals(
+      testParseRule(
+        """
+        *constconst a
+        """,
+        declarator
+      ),
+      "*(const,const)Var(Some(a))"
+    )
+
   }
 
 }
