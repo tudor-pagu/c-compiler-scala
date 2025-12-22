@@ -404,4 +404,14 @@ class TypeCheckerTest extends FunSuite {
       """)
   }
 
+  test("pointer type tests") {
+    expectTypePass(
+      """
+      int main() {
+        int *x;
+      }
+      """
+      )
+  }
+
 }

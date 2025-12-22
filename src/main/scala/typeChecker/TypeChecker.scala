@@ -48,8 +48,8 @@ class TypeCheck {
         (op, typeOf(l, nv)._1, typeOf(r, nv)._1) match {
           case (
                 BinaryOp.Add | BinaryOp.Sub | BinaryOp.Mult | BinaryOp.Div,
-                l @ NumT(lsize, lsigned),
-                r @ NumT(rsize, rsigned)
+                l @ NumT(lsize, lsigned, lquals),
+                r @ NumT(rsize, rsigned, rquals)
               ) => {
             // TODO: This works now when the only type is int, but will not be correct once we have more types.
             (l, nv)
@@ -63,9 +63,9 @@ class TypeCheck {
       case AstExtKind.PrefixOperation(op, e) =>
         (
           (op, typeOf(e, nv)._1) match {
-            case (PrefixOp.Negation, t @ NumT(size, signed)) =>
+            case (PrefixOp.Negation, t @ NumT(size, signed, quals)) =>
               Type.numericalPromotion(t)
-            case (PrefixOp.UnaryPlus, t @ NumT(size, signed)) =>
+            case (PrefixOp.UnaryPlus, t @ NumT(size, signed, quals)) =>
               Type.numericalPromotion(t)
             case (_, t) =>
               throw createError(

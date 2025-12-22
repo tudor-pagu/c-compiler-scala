@@ -7,13 +7,25 @@ package tpagu.compiler.typeChecker
 sealed trait Type {
   def size(): Long // all types need to know their size
   def alignment(): Long // all types need to know their alignment requirement
-
 }
 
-case class NumT(width: Long, signed: Boolean = true) extends Type {
+case class TypeQualifiers(
+  isConst: Boolean = false,
+  isVolatile: Boolean = false,
+  isRestrict: Boolean = false
+)
+
+case class NumT(width: Long, signed: Boolean = true, qualifiers: TypeQualifiers = TypeQualifiers()) extends Type {
   override def size(): Long = width
   override def alignment(): Long = width
+  override def toString(): String = s"NumT($width,$signed)"
 }
+
+case class PtrT(innerT: Type, qualifiers: TypeQualifiers = TypeQualifiers()) extends Type {
+  override def size(): Long = 8 // just hard coding 8 bytes as the size
+  override def alignment(): Long = 8
+}
+
 case class FunT(returnType: Type, paramTypes: List[Type]) extends Type {
   override def size(): Long = {
     throw RuntimeException("Tried to take size of a function type. This should not be allowed by the type checker.")
