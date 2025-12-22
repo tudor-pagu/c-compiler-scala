@@ -335,7 +335,7 @@ class TypeCheckerTest extends FunSuite {
       """,
       ""
     )
-    
+
     expectTypeError(
       """ 
       int f() {
@@ -386,7 +386,7 @@ class TypeCheckerTest extends FunSuite {
         y = x = y;
       }
       """)
-    
+
     expectTypePass(""" 
       int main() {
         int x = 1;
@@ -409,9 +409,21 @@ class TypeCheckerTest extends FunSuite {
       """
       int main() {
         int *x;
+        int *y;
+        x = y;
       }
       """
-      )
+    )
+    expectTypeError(
+      """
+      int main() {
+        int *x;
+        int y;
+        x = y;
+      }
+      """,""
+    )
+
   }
 
 }

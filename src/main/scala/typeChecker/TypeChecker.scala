@@ -13,6 +13,7 @@ import tpagu.compiler.parser.DirectDeclarator
 import tpagu.compiler.parser.Declaration
 import tpagu.compiler.parser.DeclarationSpecifier.TSpecifier
 import java.util.IdentityHashMap
+import tpagu.compiler.parser.TypeQualifier
 
 type TypeEnvironment = Map[String, Type]
 
@@ -229,10 +230,25 @@ def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type =
     declaration.declarator
   )
 
+def combineQualifiers(quals: List[TypeQualifier]): TypeQualifiers = {
+  TypeQualifiers(
+    isConst = quals.contains(TypeQualifier.Const),
+    //TODO: Add the rest of the qualifiers
+    )
+}
+
 def getTypeOfDeclaration(
     declSpecifiers: List[DeclarationSpecifier],
     declarator: Declarator
 )(implicit span: Span): Type = {
+  if (!declarator.pointers.isEmpty) {
+    // we deal with pointer declarators recursively:
+    val quals = declarator.pointers.head.qualifiers
+    val peeledDeclarator = Declarator(declarator.pointers.tail, declarator.direct)
+    return PtrT(getTypeOfDeclaration(declSpecifiers, peeledDeclarator), combineQualifiers(quals))
+  }
+
+
   val baseType = getBaseType(declSpecifiers)
   declarator.direct match {
     case DirectDeclarator.Variable(_) => baseType
