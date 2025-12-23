@@ -5,9 +5,10 @@ import tpagu.compiler.parser.translationUnit
 import tpagu.compiler.typeChecker.TypeCheck
 import tpagu.compiler.typeChecker.Type
 import tpagu.compiler.desugar.Desugar
+import tpagu.compiler.GoldCopyFunSuite
 
-class DesugarTest extends FunSuite {
-  def desugarHelper(input: String, expected: String): Unit = {
+class DesugarTest extends GoldCopyFunSuite {
+  def desugarHelper(input: String): String = {
     val lexer = new Lexer(new File("test.txt", input))
     val ast = translationUnit.parse(lexer) match {
       case Left(err)       => fail(s"Could not parse expression: $err")
@@ -18,11 +19,11 @@ class DesugarTest extends FunSuite {
     typeChecker.typeOf(ast, empty)
     implicit val typeMap = typeChecker.typeMap
     val coreAst = Desugar.desugar(ast)
-    assertEquals(coreAst.toString(), expected)
+    coreAst.toString()
   }
 
-  test("test 1") {
-    desugarHelper("int main() {int a = 2; int* b = &a;}","")
+  goldcopyTest("test addressOf 1") {
+    desugarHelper("int main() {int a = 3; int* b = &a;}")
   }
 
   // I should just make some proper gold copy tests for this, right now the tests kind of suck
