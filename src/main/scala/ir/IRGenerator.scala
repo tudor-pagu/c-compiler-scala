@@ -136,15 +136,7 @@ class IRGenerator(
       }
       case Identifier(name, t) => {
         t match {
-          case NumT(width, signed, quals) => {
-            val reg = variableMap(name)
-            val (destReg, ir2) = this.getNewRegister()
-            val ops = List(
-              IR.Load(reg, destReg, width = t.size().toInt)
-            )
-            (ops, destReg, ir2)
-          }
-          case PtrT(innerT, quals) => {
+          case NumT(_,_,_) | PtrT(_,_) => {
             val reg = variableMap(name)
             val (destReg, ir2) = this.getNewRegister()
             val ops = List(
