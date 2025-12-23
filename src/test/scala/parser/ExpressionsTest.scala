@@ -4,32 +4,33 @@ import tpagu.compiler.*
 import munit.FunSuite
 
 class ParserTest extends FunSuite {
-  
+
   // Helper methods
   def parseExpression(input: String): String = {
     val lexer = new Lexer(new File("test.txt", input))
     expression.parse(lexer) match {
-      case Left(err) => fail(s"Could not parse expression: $err")
+      case Left(err)       => fail(s"Could not parse expression: $err")
       case Right((ast, _)) => ast.toString()
     }
   }
-  
-  
-  def expectParseError(input: String, parser: ParseRule[AstExt]): CompilerError = {
+
+  def expectParseError(
+      input: String,
+      parser: ParseRule[AstExt]
+  ): CompilerError = {
     val lexer = new Lexer(new File("test.txt", input))
     parser.parse(lexer) match {
       case Left(err) => err
-      case Right(_) => fail(s"Expected parse error for input: $input")
+      case Right(_)  => fail(s"Expected parse error for input: $input")
     }
   }
-  
-  
+
   // Literal parser tests
   test("parse simple integer literal") {
     val result = parseExpression("42")
     assertEquals(result, "Int(42)")
   }
-  
+
   test("parse zero literal") {
     val result = parseExpression("0")
     assertEquals(result.toString, "Int(0)")
@@ -79,7 +80,9 @@ class ParserTest extends FunSuite {
 
   test("atom fails on unmatched parenthesis") {
     val error = expectParseError("(42", atom)
-    assert(error.message.contains("Expected") && error.message.contains("CloseParen"))
+    assert(
+      error.message.contains("Expected") && error.message.contains("CloseParen")
+    )
   }
 
   // Unary expression tests
@@ -226,12 +229,18 @@ class ParserTest extends FunSuite {
 
   test("complex mixed expression") {
     val result = parseExpression("1 + 2 * 3 / 6 + 4")
-    assertEquals(result.toString, "Add(Add(Int(1), Div(Mult(Int(2), Int(3)), Int(6))), Int(4))")
+    assertEquals(
+      result.toString,
+      "Add(Add(Int(1), Div(Mult(Int(2), Int(3)), Int(6))), Int(4))"
+    )
   }
 
   test("multiplication chain with addition") {
     val result = parseExpression("5 + 2 * 3 * 4")
-    assertEquals(result.toString, "Add(Int(5), Mult(Mult(Int(2), Int(3)), Int(4)))")
+    assertEquals(
+      result.toString,
+      "Add(Int(5), Mult(Mult(Int(2), Int(3)), Int(4)))"
+    )
   }
   // Parentheses tests
   test("parentheses override precedence") {
@@ -246,7 +255,10 @@ class ParserTest extends FunSuite {
 
   test("complex parentheses expression") {
     val result = parseExpression("(2 + 3) * (4 - 1)")
-    assertEquals(result.toString, "Mult(Add(Int(2), Int(3)), Sub(Int(4), Int(1)))")
+    assertEquals(
+      result.toString,
+      "Mult(Add(Int(2), Int(3)), Sub(Int(4), Int(1)))"
+    )
   }
 
   test("parentheses with unary") {
@@ -256,9 +268,10 @@ class ParserTest extends FunSuite {
 
   test("unmatched opening parenthesis fails") {
     val error = expectParseError("(2 + 3", expression)
-    assert(error.message.contains("Expected") && error.message.contains("CloseParen"))
+    assert(
+      error.message.contains("Expected") && error.message.contains("CloseParen")
+    )
   }
-
 
   test("simple function call") {
     assertEquals(
@@ -292,6 +305,20 @@ class ParserTest extends FunSuite {
     assertEquals(
       parseExpression("a = 2"),
       "Assignment(Id(a), Int(2))"
-      )
+    )
+  }
+
+  test("dereference") {
+    assertEquals(
+      parseExpression("*b"),
+      "*(Id(b))"
+    )
+  }
+
+  test("addressOf") {
+    assertEquals(
+      parseExpression("&b"),
+      "&(Id(b))"
+    )
   }
 }

@@ -9,7 +9,7 @@ enum Token:
   case OpenParen, CloseParen
   case OpenBrace, CloseBrace
   case Semicolon, Comma
-  case Plus, Minus, Times, Div
+  case Plus, Minus, Times, Div, Ampersand
   case Assign
   case EOF
   case TypeName(t: Type)
@@ -82,6 +82,7 @@ class Lexer private (
         case '+'                 => Token.Plus
         case '-'                 => Token.Minus
         case '*'                 => Token.Times
+        case '&'                 => Token.Ampersand
         case '/'                 => Token.Div
         case '='                 => Token.Assign
         case '{'                 => Token.OpenBrace
@@ -104,7 +105,7 @@ class Lexer private (
         case d if d.isDigit => Token.Number(value + d.toString)
         case _              => Accept(token)
     case t @ (Token.OpenParen | Token.CloseParen | Token.Semicolon | Token.EOF |
-        Token.Plus | Token.Minus | Token.Times | Token.Div | Token.Comma |
+        Token.Plus | Token.Minus | Token.Times | Token.Ampersand | Token.Div | Token.Comma |
         Token.Assign | Token.OpenBrace | Token.CloseBrace) =>
       Accept(t)
     case t @ (Token.TypeName(_) | Token.Return | Token.Const) =>

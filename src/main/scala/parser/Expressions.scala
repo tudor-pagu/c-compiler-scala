@@ -105,11 +105,13 @@ def postfixExpression: ParseRule[AstExt] =
 // unaryExpression -> [+-] unaryExpression | postfixExpression
 def unaryExpression: ParseRule[AstExt] = {
   val withPrefix = (for {
-    op <- OneOf(List(Token.Plus, Token.Minus))
+    op <- OneOf(List(Token.Plus, Token.Minus, Token.Times, Token.Ampersand))
     a <- unaryExpression
   } yield op.token match
     case Token.Plus  => Right(AstExtKind.PrefixOperation(PrefixOp.UnaryPlus, a))
     case Token.Minus => Right(AstExtKind.PrefixOperation(PrefixOp.Negation, a))
+    case Token.Times => Right(AstExtKind.PrefixOperation(PrefixOp.Dereference, a))
+    case Token.Ampersand => Right(AstExtKind.PrefixOperation(PrefixOp.AddressOf, a))
     case _           => Left(CompilerError("Invalid unary operation", op.span))
   ).withSpan
   (withPrefix <|> postfixExpression).named("unaryExpression")

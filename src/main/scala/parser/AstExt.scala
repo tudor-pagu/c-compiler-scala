@@ -147,9 +147,13 @@ enum PrefixOp:
     * but ```char c = 'a'; printf("test %d\n", sizeof(+c));``` prints 4
     */
   case UnaryPlus
+  case Dereference // *a
+  case AddressOf // &a
   override def toString: String = this match {
     case PrefixOp.Negation  => "Neg"
     case PrefixOp.UnaryPlus => "Plus"
+    case PrefixOp.Dereference => "*"
+    case PrefixOp.AddressOf => "&"
   }
 
 enum PostfixOp:
