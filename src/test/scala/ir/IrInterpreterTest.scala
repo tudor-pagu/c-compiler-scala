@@ -291,7 +291,7 @@ class IrInterpreterTest extends FunSuite {
         int *p;
         int a = 2;
         p = &a;
-        return *a;
+        return *p;
       }
       """,
       2
