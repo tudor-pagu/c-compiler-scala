@@ -1,0 +1,3 @@
+main():
+r1 <= alloc(4, 4)
+store $2 => [r1]

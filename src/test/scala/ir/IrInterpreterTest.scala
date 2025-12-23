@@ -337,6 +337,7 @@ class IrInterpreterTest extends FunSuite {
         p2 = &p;
         int c = **p2;
         a = 42;
+        return a;
       }
       """,
       42

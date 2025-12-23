@@ -1,0 +1,9 @@
+main():
+r1 <= alloc(4, 4)
+store $1 => [r1]
+r2 <= alloc(4, 4)
+load [r1] => r3
+r4 <= r3 + $1
+store r4 => [r2]
+load [r2] => r5
+return r5
