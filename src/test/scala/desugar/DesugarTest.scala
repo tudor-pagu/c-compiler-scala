@@ -21,6 +21,10 @@ class DesugarTest extends FunSuite {
     assertEquals(coreAst.toString(), expected)
   }
 
+  test("test 1") {
+    desugarHelper("int main() {int a = 2; int* b = &a;}","")
+  }
+
   // I should just make some proper gold copy tests for this, right now the tests kind of suck
   // test("test 1") {
   //   desugarHelper("""

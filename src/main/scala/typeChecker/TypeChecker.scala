@@ -68,6 +68,18 @@ class TypeCheck {
               Type.numericalPromotion(t)
             case (PrefixOp.UnaryPlus, t @ NumT(size, signed, quals)) =>
               Type.numericalPromotion(t)
+            case (PrefixOp.AddressOf, t) =>
+              if (ValueCategoryChecker.isLvalue(e, typeMap)) {
+                PtrT(t, t.qualifiers)
+              } else {
+                throw createError(s"Tried to get the address of rvalue.",e.span)
+              }
+
+            case (PrefixOp.Dereference, t) =>
+               t match {
+                 case PtrT(inner, qualifiers) => inner
+                 case _ => throw createError(s"Tried to dereference non pointer type: ${t.toString}", e.span)
+               }
             case (_, t) =>
               throw createError(
                 s"Invalid unary opration on ${t.toString}",

@@ -14,6 +14,8 @@ case class IntLiteral(value: Int, t: Type) extends AstC
 case class Add(l:AstC , r:AstC , t: Type) extends AstC
 case class Mult(l:AstC, r:AstC, t: Type) extends AstC
 case class Neg(e:AstC, t: Type) extends AstC
+case class Dereference(e:AstC, t:Type) extends AstC
+case class AddressOf(e:AstC, t:Type) extends AstC
 case class FunctionCall(callee: AstC, args: List[AstC], t: Type) extends AstC
 case class Identifier(name: String, t: Type) extends AstC
 

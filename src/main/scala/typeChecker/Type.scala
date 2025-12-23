@@ -7,6 +7,7 @@ package tpagu.compiler.typeChecker
 sealed trait Type {
   def size(): Long // all types need to know their size
   def alignment(): Long // all types need to know their alignment requirement
+  def qualifiers: TypeQualifiers
 }
 
 case class TypeQualifiers(
@@ -33,6 +34,7 @@ case class FunT(returnType: Type, paramTypes: List[Type]) extends Type {
   override def alignment(): Long = {
     throw RuntimeException("Tried to take alignment of a function type. This should not be allowed by the type checker.")
   }
+  override def qualifiers: TypeQualifiers = TypeQualifiers(isConst = true)
 }
 case class NoneT() extends Type { // Just used for statements, things which shouldn't have types\
   override def size(): Long = {
@@ -40,6 +42,9 @@ case class NoneT() extends Type { // Just used for statements, things which shou
   }
   override def alignment(): Long = {
     throw RuntimeException("Tried to take alignment of a NoneT type. This should not be allowed by the type checker.")
+  }
+  override def qualifiers: TypeQualifiers = {
+    throw RuntimeException("Tried to take qualifiers of NoneT type. This should not be allowed by the type checker.")
   }
 }
 

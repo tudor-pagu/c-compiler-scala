@@ -30,6 +30,8 @@ object Desugar {
         op match {
           case PrefixOp.Negation => Neg(desugar(inner), typeMap.get(e))
           case PrefixOp.UnaryPlus => Cast(desugar(inner), typeMap.get(e))
+          case PrefixOp.AddressOf => AddressOf(desugar(inner), typeMap.get(e))
+          case PrefixOp.Dereference => Dereference(desugar(inner), typeMap.get(e))
         }
       case AstExtKind.PostfixOperation(op, inner) => op match {
         case PostfixOp.FunctionCall(args) => FunctionCall(desugar(inner), args.map(arg=>desugar(arg)), typeMap.get(e))
