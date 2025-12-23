@@ -120,6 +120,11 @@ class IrInterpreter {
         regs: Map[Long, Long],
         mem: Memory
     ): (Long, Memory) = {
+      // if no return is present, return 0 implicitly at the interpreter level
+      if (ops.isEmpty) {
+        return (0, mem)
+      }
+
       ops.head match {
         case Return(v) => (opValue(v, regs), mem)
         case _ => {

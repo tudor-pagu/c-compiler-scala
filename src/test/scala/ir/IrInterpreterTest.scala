@@ -343,5 +343,14 @@ class IrInterpreterTest extends FunSuite {
       42
     )
   }
+  test("empty main returns 0") {
+    irInterpHelper(
+      """
+      int main() {
+      }
+      """,
+      0
+      )
+  }
 
 }
