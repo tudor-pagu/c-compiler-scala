@@ -5,6 +5,8 @@ import tpagu.compiler.parser.AstExt
 import tpagu.compiler.typeChecker.Type
 import tpagu.compiler.parser.AstExtKind.Identifier
 import tpagu.compiler.typeChecker.FunT
+import tpagu.compiler.parser.PrefixOp
+import tpagu.compiler.parser.AstExtKind.PrefixOperation
 
 // Checks that no rules regarding lvalue/rvalue
 // are violated.
@@ -17,7 +19,10 @@ object ValueCategoryChecker {
           case _          => true
         }
       }
-      case _ => false
+      case PrefixOperation(PrefixOp.Dereference, e) => {
+        true
+      }
+      case _                                 => false
       // TODO add more cases, for now we just support identifiers.
     }
 

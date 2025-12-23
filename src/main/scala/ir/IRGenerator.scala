@@ -111,8 +111,8 @@ class IRGenerator(
 
       case AddressOf(e, t) => {
         val (lpre, lop, ir2) = this.produceExpression(e)
-        val addr = getAddressOfLvalue(e)
-        (lpre, addr, ir2)
+        val (ops2,addr, ir3) = ir2.getAddressOfLvalue(e)
+        (lpre ++ ops2, addr, ir3)
       }
 
       case FunctionCall(callee, args, t) => {
@@ -154,12 +154,12 @@ class IRGenerator(
       }
 
       case Assignment(leftSide, rightSide) => {
-        val loweredAssignment= lower(e)
-        val leftAddr = getAddressOfLvalue(leftSide)
-        val (destReg, ir2) = loweredAssignment._2.getNewRegister()
+        val loweredAssignment = lower(e)
+        val (ops1, op, ir2) = loweredAssignment._2.getAddressOfLvalue(leftSide)
+        val (destReg, ir3) = ir2.getNewRegister()
         // we want to return a register containing the value we're assigning to.
-        val ops = loweredAssignment._1 :+ Load(leftAddr, destReg, width=leftSide.t.size().toInt)
-        (ops, destReg, ir2)
+        val ops = loweredAssignment._1 :+ Load(op, destReg, width=leftSide.t.size().toInt)
+        (ops1 ++ ops, destReg, ir3)
       }
 
       case _ => {
@@ -170,8 +170,16 @@ class IRGenerator(
     }
   }
 
-  def getAddressOfLvalue(e: AstC): Register = e match {
-    case Identifier(name, t) => variableMap.get(name).get
+  def getAddressOfLvalue(e: AstC): (List[Instruction], Operand, IRGenerator) = e match {
+    case Identifier(name, t) => (Nil, variableMap.get(name).get, this)
+    case Dereference(ptr, t) => {
+      val innerApl = getAddressOfLvalue(ptr)
+      val (destReg, ir2) = innerApl._3.getNewRegister()
+      val ops = List(
+        IR.Load(innerApl._2, destReg, width = t.size().toInt)
+      )
+      (ops, destReg, ir2)
+    }
     case _ => throw RuntimeException(s"Did not manage to get address of expression ${e}, maybe its not an lvalue.")
   }
 
@@ -190,10 +198,10 @@ class IRGenerator(
         ), ir2.withNewVariableMap(name, reg))
       }
       case Assignment(leftSide, rightSide) => {
-        val reg = getAddressOfLvalue(leftSide)
-        val (ops, op, ir2) = this.produceExpression(rightSide)
+        val (ops1, op1, ir1) = getAddressOfLvalue(leftSide)
+        val (ops2, op2, ir2) = ir1.produceExpression(rightSide)
         // TODO: breaks for types with different widths, structs, etc.
-        (ops :+ Store(op, reg, width = rightSide.t.size().toInt), ir2)
+        (ops1 ++ ops2 :+ Store(op2, op1, width = rightSide.t.size().toInt), ir2)
       }
 
       case FunctionDefinition(name, paramNames, body, ofType) => {
@@ -234,8 +242,7 @@ class IRGenerator(
 
         val finalIrGen = this.withLastRegisterOf(execBody._2)
         (finalOps, finalIrGen)
-      }
-      case Block(statements) => {
+      } case Block(statements) => {
         val (innerOps, innerIrGen) = statements.foldLeft(List():List[Instruction], this)((acc, current) => {
           val (previousOps, previousIrGen) = acc
           val x = previousIrGen.lower(current)
