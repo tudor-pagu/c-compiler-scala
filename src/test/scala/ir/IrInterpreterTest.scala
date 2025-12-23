@@ -343,6 +343,20 @@ class IrInterpreterTest extends FunSuite {
       42
     )
   }
+
+  test("test pointer deref assignment") {
+    irInterpHelper(
+      """
+      int main() {
+        int a; 
+        int *p = &a;
+        *p = 42;
+        return a;
+      }
+      """,
+      42
+      )
+  }
   test("empty main returns 0") {
     irInterpHelper(
       """
