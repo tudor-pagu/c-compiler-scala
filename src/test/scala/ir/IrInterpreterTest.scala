@@ -280,8 +280,9 @@ class IrInterpreterTest extends FunSuite {
         f(x);
         return x;
       }
-      """,3
-      )
+      """,
+      3
+    )
   }
 
   test("test pointers") {
@@ -295,7 +296,7 @@ class IrInterpreterTest extends FunSuite {
       }
       """,
       2
-      )
+    )
 
     irInterpHelper(
       """
@@ -305,8 +306,9 @@ class IrInterpreterTest extends FunSuite {
         a = 4;
         return *p;
       }
-      """, 4,
-      )
+      """,
+      4
+    )
 
     irInterpHelper(
       """
@@ -320,7 +322,25 @@ class IrInterpreterTest extends FunSuite {
       }
       """,
       6
-      )
+    )
+  }
+
+  test("test double pointers") {
+    irInterpHelper(
+      """
+      int main() {
+        int **p2;
+        int *p;
+        int a, c;
+
+        p = &a;
+        p2 = &p;
+        int c = **p2;
+        a = 42;
+      }
+      """,
+      42
+    )
   }
 
 }
