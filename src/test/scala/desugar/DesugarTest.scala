@@ -26,6 +26,10 @@ class DesugarTest extends GoldCopyFunSuite {
     desugarHelper("int main() {int a = 3; int* b = &a;}")
   }
 
+  goldcopyTest("test deref") {
+    desugarHelper("int main() {int a = 3; int* b = &a; int c = *b;}")
+  }
+
   // I should just make some proper gold copy tests for this, right now the tests kind of suck
   // test("test 1") {
   //   desugarHelper("""
