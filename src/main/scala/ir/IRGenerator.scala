@@ -5,6 +5,7 @@ import tpagu.compiler.*
 import tpagu.compiler.desugar.*
 import tpagu.compiler.typeChecker.{FunT, NumT}
 import tpagu.compiler.ir.IR.Load
+import tpagu.compiler.typeChecker.PtrT
 
 def isValidWidth(width:Int) = width == 1 || width == 2 || width == 4 || width == 8
 object IRGenerator {
@@ -98,6 +99,22 @@ class IRGenerator(
         val fop = IR.Neg(lop, reg)
         (lpre :+ fop, reg, ir3)
       }
+
+      case Dereference(e, t) => {
+        val (lpre, lop, ir2) = this.produceExpression(e)
+        val (destReg, ir3) = ir2.getNewRegister()
+        val ops = List(
+          IR.Load(lop, destReg)
+          )
+        (lpre ++ ops, destReg, ir3)
+      }
+
+      case AddressOf(e, t) => {
+        val (lpre, lop, ir2) = this.produceExpression(e)
+        val addr = getAddressOfLvalue(e)
+        (lpre, addr, ir2)
+      }
+
       case FunctionCall(callee, args, t) => {
         (callee, callee.t) match {
           case (Identifier(name, idt), FunT(ret, params)) => {
@@ -120,6 +137,14 @@ class IRGenerator(
       case Identifier(name, t) => {
         t match {
           case NumT(width, signed, quals) => {
+            val reg = variableMap(name)
+            val (destReg, ir2) = this.getNewRegister()
+            val ops = List(
+              IR.Load(reg, destReg, width = t.size().toInt)
+            )
+            (ops, destReg, ir2)
+          }
+          case PtrT(innerT, quals) => {
             val reg = variableMap(name)
             val (destReg, ir2) = this.getNewRegister()
             val ops = List(

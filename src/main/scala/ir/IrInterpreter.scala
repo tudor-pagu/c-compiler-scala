@@ -164,7 +164,7 @@ class IrInterpreter {
         throw RuntimeException("Not expecting return here")
       }
       case Store(v, loc, displacement, index, scale, width) => {
-        val location = regs.get(loc.id).get
+        val location = opValue(loc, regs)
         val indexValue = index match {
           case None      => 1
           case Some(ind) => regs.get(ind.id).get
@@ -178,7 +178,7 @@ class IrInterpreter {
       }
 
       case Load(loc, dst, displacement, index, scale, width) => {
-        val location = regs.get(loc.id).get
+        val location = opValue(loc, regs)
         val indexValue = index match {
           case None      => 1
           case Some(ind) => regs.get(ind.id).get
