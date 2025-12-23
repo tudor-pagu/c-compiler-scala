@@ -313,6 +313,21 @@ class ParserTest extends FunSuite {
       parseExpression("*b"),
       "*(Id(b))"
     )
+
+    assertEquals(
+      parseExpression("*b + 2"),
+      "Add(*(Id(b)), Int(2))"
+    )
+
+    assertEquals(
+      parseExpression("*b * 2"),
+      "Mult(*(Id(b)), Int(2))"
+    )
+
+    assertEquals(
+      parseExpression("a + * b"),
+      "Add(Id(a), *(Id(b)))"
+    )
   }
 
   test("addressOf") {

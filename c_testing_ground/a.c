@@ -1,5 +1,7 @@
 #include <stdio.h>
 int main() {
-    int int int c;
-    printf("hello world");
+    int a = 2;
+    int *b = &a;
+    int c = a + *b;
+    printf("%d\n", c);
 }
