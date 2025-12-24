@@ -54,7 +54,7 @@ def typeQualifier: ParseRule[TypeQualifier] =
   } yield Right(TypeQualifier.Const))
 
 def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
-  typeSpecifier
+  (typeSpecifier <|> typeQualifier.map(qualifier => Right(DeclarationSpecifier.TQualifier(qualifier))))
 }
 
 def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {

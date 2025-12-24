@@ -1,9 +1,9 @@
 package tpagu.compiler.parser
 import tpagu.compiler.lexer.*
 import tpagu.compiler.*
-import munit.FunSuite
+import tpagu.compiler.GoldCopyFunSuite
 
-class StatementTest extends FunSuite {
+class StatementTest extends GoldCopyFunSuite {
 
   // Helper methods
   def parseStatement(input: String): String = {
@@ -22,7 +22,7 @@ class StatementTest extends FunSuite {
     }
   }
 
-  def testParseRule[A](input: String, rule: ParseRule[A]) = {
+  def testParseRule[A](input: String, rule: ParseRule[A]): String = {
     val lexer = new Lexer(new File("test.txt", input))
     rule.parse(lexer) match {
       case Left(err)       => fail(s"Could not parse translation unit: $err")
@@ -30,74 +30,37 @@ class StatementTest extends FunSuite {
     }
   }
 
-  def expectParseError(
-      input: String,
-      parser: ParseRule[AstExt]
-  ): CompilerError = {
-    val lexer = new Lexer(new File("test.txt", input))
-    statement.parse(lexer) match {
-      case Left(err) => err
-      case Right(_)  => fail(s"Expected parse error for input: $input")
-    }
+  goldcopyTest("parse simple integer literal") {
+    parseStatement("int a = 2;")
   }
 
-  test("parse simple integer literal") {
-    assertEquals(
-      parseStatement("int a = 2;"),
-      "Declaration([Var(Some(a)) = Int(2)])"
-    )
+  goldcopyTest("parse simple integer literal with multiple declarations") {
+    parseStatement("int a = 2, b = 3;")
   }
 
-  test("parse simple integer literal") {
-    assertEquals(
-      parseStatement("int a = 2, b = 3;"),
-      "Declaration([Var(Some(a)) = Int(2), Var(Some(b)) = Int(3)])"
-    )
+  goldcopyTest("function declaration1") {
+    parseStatement("int a(int b, int c);")
   }
 
-  test("function declaration1") {
-    assertEquals(
-      parseStatement("int a(int b, int c);"),
-      "Declaration([Func(Some(a), [NumT(4,true) Var(Some(b)), NumT(4,true) Var(Some(c))])])"
-    )
+  goldcopyTest("function declaration2") {
+    parseStatement("int a(int, int);")
   }
 
-  test("function declaration2") {
-    assertEquals(
-      parseStatement("int a(int, int);"),
-      "Declaration([Func(Some(a), [NumT(4,true) Var(None), NumT(4,true) Var(None)])])"
-    )
+  goldcopyTest("function declaration3") {
+    parseStatement("int a(int(int, int c), int);")
   }
 
-  test("function declaration3") {
-    assertEquals(
-      parseStatement("int a(int(int, int c), int);"),
-      "Declaration([Func(Some(a), [NumT(4,true) Func(None, [NumT(4,true) Var(None), NumT(4,true) Var(Some(c))]), NumT(4,true) Var(None)])])"
-    )
+  goldcopyTest("abstract function declaration") {
+    parseStatement("int(int, int);")
   }
 
-  test("abstract function declaration") {
-    assertEquals(
-      parseStatement(
-        "int(int, int);"
-      ), // should be valid syntactically but not semantically
-      "Declaration([Func(None, [NumT(4,true) Var(None), NumT(4,true) Var(None)])])"
-    )
+  goldcopyTest("function definition test") {
+    parseStatement("int a(int b) { int c; }")
   }
 
-  test("function definition test") {
-    assertEquals(
-      parseStatement(
-        "int a(int b) { int c; }"
-      ),
-      "FuncDef(NumT(4,true) Func(Some(a), [NumT(4,true) Var(Some(b))]), Block({ Declaration([Var(Some(c))]) }))"
-    )
-  }
-
-  test("translation unit test 1") {
-    assertEquals(
-      parseTranslationUnit(
-        """
+  goldcopyTest("translation unit test 1") {
+    parseTranslationUnit(
+      """
         int f(int a, int b) {
             a + b;
         }
@@ -106,15 +69,12 @@ class StatementTest extends FunSuite {
           a + 5;
         }
         """
-      ),
-      """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(NumT(4,true) Func(Some(main), []), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })"""
     )
   }
 
-  test("translation unit test 2") {
-    assertEquals(
-      parseTranslationUnit(
-        """
+  goldcopyTest("translation unit test 2") {
+    parseTranslationUnit(
+      """
         int f(int a, int b) {
             return a + b;
         }
@@ -124,76 +84,34 @@ class StatementTest extends FunSuite {
           return 0;
         }
         """
-      ),
-      """TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ Return(Add(Id(a), Id(b))) })); FuncDef(NumT(4,true) Func(Some(main), []), Block({ Declaration([Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); Declaration([Var(Some(c)) = Add(Id(a), Int(5))]); Return(Int(0)) })) })"""
     )
   }
 
-  test("pointer test") {
-    assertEquals(
-      testParseRule(
-        """
-        *a
-        """,
-        declarator
-      ),
-      "*Var(Some(a))"
-    )
+  goldcopyTest("pointer test") {
+    testParseRule("*a", declarator)
   }
 
-  test("pointer test 2") {
-    assertEquals(
-      testParseRule(
-        """
-        **a
-        """,
-        declarator
-      ),
-      "**Var(Some(a))"
-    )
+  goldcopyTest("pointer test 2") {
+    testParseRule("**a", declarator)
   }
 
-  test("pointer test const") {
-    assertEquals(
-      testParseRule(
-        """
-        *const a
-        """,
-        declarator
-      ),
-      "*(const)Var(Some(a))"
-    )
-    assertEquals(
-      testParseRule(
-        """
-        *const const a
-        """,
-        declarator
-      ),
-      "*(const,const)Var(Some(a))"
-    )
-
-    assertEquals(
-      testParseRule(
-        """
-        *const * const a
-        """,
-        declarator
-      ),
-      "*(const)*(const)Var(Some(a))"
-    )
-
-    // we want to make sure the lexer doesnt split the consts by iteslf.
-    assertNotEquals(
-      testParseRule(
-        """
-        *constconst a
-        """,
-        declarator
-      ),
-      "*(const,const)Var(Some(a))"
-    )
-
+  goldcopyTest("pointer test const") {
+    testParseRule("*const a", declarator)
   }
 
+  goldcopyTest("pointer test const const") {
+    testParseRule("*const const a", declarator)
+  }
+
+  goldcopyTest("pointer test const star const") {
+    testParseRule("*const * const a", declarator)
+  }
+
+  goldcopyTest("pointer test constconst not split") {
+    testParseRule("*constconst a", declarator)
+  }
+
+  goldcopyTest("const declarations") {
+    testParseRule("const int a = 42;", statement)
+  }
 }

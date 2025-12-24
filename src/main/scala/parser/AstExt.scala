@@ -57,7 +57,7 @@ enum AstExtKind:
           case None           => decl.toString
         }
       }
-      s"Declaration([${declStrings.mkString(", ")}])"
+      s"Declaration((${declSpecifiers.mkString(",")}),[${declStrings.mkString(", ")}])"
     case AstExtKind.Block(statements) =>
       val stmtStrings = statements.map(_.toString).mkString("; ")
       s"Block({ $stmtStrings })"
