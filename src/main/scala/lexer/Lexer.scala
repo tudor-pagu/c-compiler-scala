@@ -12,7 +12,8 @@ enum Token:
   case Plus, Minus, Times, Div, Ampersand
   case Assign
   case EOF
-  case TypeName(t: Type)
+  case Int
+  case Long
   case Return
   case Const
 
@@ -27,8 +28,7 @@ val builtinTypeTable: Map[String, Type] = Map(
 
 class Lexer private (
     val input: File,
-    val ind: Int,
-    typeTable: Map[String, Type] = builtinTypeTable
+    val ind: Int
 ) {
   def makeError(message: String): CompilerError =
     CompilerError(message, Span(ind, ind + 1, input))
@@ -96,8 +96,8 @@ class Lexer private (
         case i if i.isLetterOrDigit => Token.Identifier(name + i.toString)
         case _ if name == "return" => Accept(Token.Return)
         case _ if name == "const" => Accept(Token.Const)
-        case _ if typeTable.contains(name) =>
-          Accept(Token.TypeName(typeTable(name)))
+        case _ if name == "int" => Accept(Token.Int)
+        case _ if name == "long" => Accept(Token.Int)
         case _ => Accept(token)
 
     case token @ Token.Number(value) =>
@@ -108,7 +108,7 @@ class Lexer private (
         Token.Plus | Token.Minus | Token.Times | Token.Ampersand | Token.Div | Token.Comma |
         Token.Assign | Token.OpenBrace | Token.CloseBrace) =>
       Accept(t)
-    case t @ (Token.TypeName(_) | Token.Return | Token.Const) =>
+    case t @ (Token.Long | Token.Int | Token.Return | Token.Const) =>
       throw new RuntimeException(
         s"Had to transition from state ${t} in lexer, but this state should only appear immediately before accepting, so this should be unreachable."
       )

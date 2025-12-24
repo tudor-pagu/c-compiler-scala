@@ -1,2 +1,10 @@
-IrGenTest-test 5 - function expression
-IrGenTest-test foo with same param
+StatementTest-parse simple integer literal
+StatementTest-parse simple integer literal with multiple declarations
+StatementTest-function declaration1
+StatementTest-function declaration2
+StatementTest-function declaration3
+StatementTest-abstract function declaration
+StatementTest-function definition test
+StatementTest-translation unit test 1
+StatementTest-translation unit test 2
+StatementTest-const declarations

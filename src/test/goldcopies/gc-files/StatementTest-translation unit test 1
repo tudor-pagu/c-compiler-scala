@@ -1,1 +1,1 @@
-TU({ FuncDef(NumT(4,true) Func(Some(f), [NumT(4,true) Var(Some(a)), NumT(4,true) Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(NumT(4,true) Func(Some(main), []), Block({ Declaration((NumT(4,true)),[Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })
+TU({ FuncDef(int Func(Some(f), [int Var(Some(a)), int Var(Some(b))]), Block({ ExprStmt(Add(Id(a), Id(b))) })); FuncDef(int Func(Some(main), []), Block({ Declaration((int),[Var(Some(a)) = Id(f){Call([Int(2), Int(3)])}]); ExprStmt(Add(Id(a), Int(5))) })) })

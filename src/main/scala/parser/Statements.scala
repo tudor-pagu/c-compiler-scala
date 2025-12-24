@@ -32,29 +32,22 @@ def declarator: ParseRule[Declarator] =
   } yield Right(Declarator(ptr, decl)))
 
 def typeSpecifier: ParseRule[DeclarationSpecifier] =
-  new ParseRule[DeclarationSpecifier] {
-    def parse(lexer: Lexer): Either[CompilerError, Out[DeclarationSpecifier]] =
-      lexer.nextToken() match {
-        case Left(err) => Left(err)
-        case Right(TokenInfo(Token.TypeName(t), span), lexer2) =>
-          Right(DeclarationSpecifier.TSpecifier(t), lexer2)
-        case Right(TokenInfo(tok, span), _) =>
-          Left(
-            CompilerError(
-              s"Expected type specifier, instead got: ${tok.toString}",
-              span
-            )
-          )
+  (OneOf(List(Token.Int, Token.Long)).map(tok =>
+      tok.token match {
+        case Token.Int => Right(IntSpec())
+        case Token.Long => Right(LongSpec())
+        case _ => throw RuntimeException("This branch shouldnt be reachable in type specifier. Check the oneOf and the branches you handle match.")
       }
-  }.named("type specifier")
+  )).named("type specifier")
 
 def typeQualifier: ParseRule[TypeQualifier] =
   (for {
     _ <- Just(Token.Const)
-  } yield Right(TypeQualifier.Const))
+  } yield Right(TypeQualifier.Const()))
 
 def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
-  (typeSpecifier <|> typeQualifier.map(qualifier => Right(DeclarationSpecifier.TQualifier(qualifier))))
+  // this map upcast is needed since typeQualifier returns TypeSpecifier but for the Or parser combinator these must be the exact same type
+  (typeSpecifier <|> typeQualifier.map(a => Right(a: DeclarationSpecifier)))
 }
 
 def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {

@@ -11,9 +11,10 @@ import tpagu.compiler.parser.DeclarationSpecifier
 import tpagu.compiler.parser.Declarator
 import tpagu.compiler.parser.DirectDeclarator
 import tpagu.compiler.parser.Declaration
-import tpagu.compiler.parser.DeclarationSpecifier.TSpecifier
 import java.util.IdentityHashMap
 import tpagu.compiler.parser.TypeQualifier
+import tpagu.compiler.parser.TypeSpecifier
+import tpagu.compiler.parser.IntSpec
 
 type TypeEnvironment = Map[String, Type]
 
@@ -225,11 +226,11 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
 ): Type =
   val l = declSpecifiers
     .filter {
-      case TSpecifier(t) => true
+      case ts:TypeSpecifier => true
       case _             => false
     }
     .map {
-      case TSpecifier(t) => t
+      case IntSpec() => NumT(4)
       case _             => throw RuntimeException("Unreachable code!")
     }
   l.headOption.getOrElse({

@@ -68,17 +68,9 @@ enum AstExtKind:
       s"TU({ $stmtStrings })"
     case AstExtKind.ExprStatement(e) =>
       s"ExprStmt(${e.toString})"
-    case AstExtKind.Nothing => "Nothing"
-    case Return(e)          => s"Return(${e.toString})"
+    case AstExtKind.Nothing                 => "Nothing"
+    case Return(e)                          => s"Return(${e.toString})"
     case AstExtKind.Assignment(left, right) => s"Assignment($left, $right)"
-  }
-
-enum TypeQualifier:
-  case Const
-  case Volatile
-  override def toString: String = this match {
-    case TypeQualifier.Const    => "const"
-    case TypeQualifier.Volatile => "volatile"
   }
 
 enum DirectDeclarator:
@@ -118,13 +110,44 @@ case class Declarator(pointers: List[Pointer], direct: DirectDeclarator) {
   }
 }
 
-enum DeclarationSpecifier:
-  case TSpecifier(t: Type) // e.g. int, char, struct, Foo
-  case TQualifier(qualifier: TypeQualifier) // e.g. const, volatile
-  override def toString: String = this match {
-    case DeclarationSpecifier.TSpecifier(t) => t.toString
-    case DeclarationSpecifier.TQualifier(q) => q.toString
+sealed trait DeclarationSpecifier
+
+sealed trait TypeSpecifier extends DeclarationSpecifier
+
+case class IntSpec() extends TypeSpecifier {
+  override def toString() = "int"
+}
+
+case class DoubleSpec() extends TypeSpecifier {
+  override def toString() = "double"
+}
+case class LongSpec() extends TypeSpecifier {
+  override def toString() = "long"
+}
+case class ShortSpec() extends TypeSpecifier {
+  override def toString() = "short"
+}
+case class StructSpec() extends TypeSpecifier {
+  override def toString() = "struct"
+}
+
+sealed trait StorageClassSpecifier extends DeclarationSpecifier
+
+case class TypedefSpec() extends StorageClassSpecifier {
+  override def toString() = "typedef"
+}
+
+sealed trait TypeQualifier extends DeclarationSpecifier
+
+object TypeQualifier {
+  case class Const() extends TypeQualifier {
+    override def toString(): String = "const"
   }
+
+  case class Volatile() extends TypeQualifier {
+    override def toString(): String = "volatile"
+  }
+}
 
 enum BinaryOp:
   case Add
@@ -150,10 +173,10 @@ enum PrefixOp:
   case Dereference // *a
   case AddressOf // &a
   override def toString: String = this match {
-    case PrefixOp.Negation  => "Neg"
-    case PrefixOp.UnaryPlus => "Plus"
+    case PrefixOp.Negation    => "Neg"
+    case PrefixOp.UnaryPlus   => "Plus"
     case PrefixOp.Dereference => "*"
-    case PrefixOp.AddressOf => "&"
+    case PrefixOp.AddressOf   => "&"
   }
 
 enum PostfixOp:
