@@ -22,8 +22,7 @@ class IrInterpreterTest extends FunSuite {
     typeChecker.typeOf(ast, empty)
     implicit val typeMap = typeChecker.typeMap
     val coreAst = Desugar.desugar(ast)
-    val irgen = IRGenerator.newIrGenerator()
-    val program = irgen.lower(coreAst)._1
+    val program = IRGenerator.pub_lower(coreAst)
     val interpreter = IrInterpreter()
     val interpResult = interpreter.interp(program)
     assertEquals(interpResult, expectedExitCode)

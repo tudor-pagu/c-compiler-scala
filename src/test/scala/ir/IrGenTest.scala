@@ -29,7 +29,7 @@ class IrGenTest extends GoldCopyFunSuite {
     implicit val typeMap = typeChecker.typeMap
     val coreAst = Desugar.desugar(ast)
     val irgen = IRGenerator.newIrGenerator()
-    val program = irgen.lower(coreAst)._1
+    val program = IRGenerator.pub_lower(coreAst)
     val programToString = program.mkString("\n")
     programToString
   }

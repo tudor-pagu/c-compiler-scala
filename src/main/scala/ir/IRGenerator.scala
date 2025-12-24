@@ -7,9 +7,76 @@ import tpagu.compiler.typeChecker.{FunT, NumT}
 import tpagu.compiler.ir.IR.Load
 import tpagu.compiler.typeChecker.PtrT
 
-def isValidWidth(width:Int) = width == 1 || width == 2 || width == 4 || width == 8
-object IRGenerator {
-  def newIrGenerator(): IRGenerator = IRGenerator(0, Map(), Map())
+def isValidWidth(width: Int) =
+  width == 1 || width == 2 || width == 4 || width == 8
+
+/** State monad we can use to handle composing stateful operations where
+  * IRGenerator encapsulates the state, and we also want to maintain the
+  * operations we generate as a list.
+  */
+case class IRMonad[A](run: IRGenerator => (List[Instruction], IRGenerator, A)) {
+  type ReturnType = (List[Instruction], IRGenerator, A)
+  def map[B](f: A => B): IRMonad[B] = {
+    IRMonad(ir => {
+      val (instr, irRes, a) = run(ir)
+      (instr, irRes, f(a))
+    })
+  }
+
+  def flatMap[B](f: A => IRMonad[B]): IRMonad[B] = {
+    IRMonad(ir => {
+      val (instr1, irRes1, a) = run(ir)
+      val (instr2, irRes2, b) = f(a).run(irRes1)
+      (instr1 ++ instr2, irRes2, b)
+    })
+  }
+}
+
+object IRMonad {
+  def emit(instr: Instruction) = IRMonad[Unit](ir => {
+    (List(instr), ir, ())
+  })
+  def emit(instr: List[Instruction]) = IRMonad[Unit](ir => {
+    (instr, ir, ())
+  })
+  def just[A](a: A) = IRMonad[A](ir => {
+    (Nil, ir, a)
+  })
+
+  def sequence[A](monads: List[IRMonad[A]]): IRMonad[List[A]] = {
+    monads.foldRight(just(List[A]())) { (currentMonad, accMonad) =>
+      for {
+        current <- currentMonad
+        acc <- accMonad
+      } yield current :: acc
+    }
+  }
+
+  def nameLookup(name: String) = {
+
+    IRMonad(ir => {
+      (Nil, ir, ir.nameLookup(name))
+    })
+  }
+
+  def withNewVariable(name: String, register: Register): IRMonad[Unit] = {
+    IRMonad(
+      { ir =>
+        {
+          (Nil, ir.withNewVariable(name, register), ())
+        }
+      }
+    )
+  }
+
+  def withNewVariables(variables: List[(String, Register)]): IRMonad[Unit] = {
+    IRMonad { ir =>
+      {
+        (Nil, ir.withNewVariableMap(ir.variableMap ++ variables), ())
+      }
+    }
+  }
+
 }
 
 // ***
@@ -23,110 +90,160 @@ class IRGenerator(
     // map from a name that should be in scope to a register containing an address to it (either in the stack
     // or in global scope)
     val variableMap: Map[String, Register],
-    val functionMap: Map[String, Label],
+    val functionMap: Map[String, Label]
 ) {
-  def nameLookup(name:String) : Register = {
-    val x= variableMap.get(name)
+  def nameLookup(name: String): Register = {
+    val x = variableMap.get(name)
     if (x.isEmpty) {
-      throw new RuntimeException(f"Tried to lookup $name but it was not set in the variableMap.")
+      throw new RuntimeException(
+        f"Tried to lookup $name but it was not set in the variableMap."
+      )
     }
     x.get
   }
 
-  def funLookup(name:String) : Label = {
-    val x= functionMap.get(name)
+  def funLookup(name: String): Label = {
+    val x = functionMap.get(name)
     if (x.isEmpty) {
-      throw new RuntimeException(f"Tried to lookup $name but it was not set in the variableMap.")
+      throw new RuntimeException(
+        f"Tried to lookup $name but it was not set in the variableMap."
+      )
     }
     x.get
   }
 
-  def withLastRegisterOf(otherIrGenerator:IRGenerator): IRGenerator = {
+  def withLastRegisterOf(otherIrGenerator: IRGenerator): IRGenerator = {
     IRGenerator(otherIrGenerator.lastRegister, variableMap, functionMap)
   }
 
-  def withNewVariableMap(name: String, register: Register):IRGenerator = {
+  def withLastRegister(lastRegister: Int): IRGenerator = {
+    IRGenerator(lastRegister, variableMap, functionMap)
+  }
+
+  def withNewVariable(name: String, register: Register): IRGenerator = {
     IRGenerator(lastRegister, variableMap.updated(name, register), functionMap)
   }
 
-  def withNewVariableMap(newMap:Map[String, Register]):IRGenerator = {
+  def withNewVariableMap(newMap: Map[String, Register]): IRGenerator = {
     IRGenerator(lastRegister, newMap, functionMap)
   }
-  
-  def withNewFunMap(name: String, label: Label):IRGenerator = {
+
+  def withNewFunMap(name: String, label: Label): IRGenerator = {
     IRGenerator(lastRegister, variableMap, functionMap.updated(name, label))
   }
 
-  def getNewRegister(): (Register, IRGenerator) = {
-    (Register(lastRegister + 1), IRGenerator(lastRegister + 1, variableMap, functionMap))
-  }
+}
 
-  def getNewRegisters(n: Int): (List[Register], IRGenerator) = {
-    if (n == 0) then {
-      return (List(), this)
+object IRGenerator {
+  def newIrGenerator(): IRGenerator = IRGenerator(0, Map(), Map())
+
+  def getNewRegister(): IRMonad[Register] = {
+    IRMonad { ir =>
+      {
+        (
+          Nil,
+          ir.withLastRegister(ir.lastRegister + 1),
+          Register(ir.lastRegister + 1)
+        )
+      }
     }
-
-    val registers = (lastRegister + 1).to(lastRegister + n).map(id => Register(id)).toList
-    assert(registers.size == n)
-    assert(registers.last.id == lastRegister + n)
-    (registers, IRGenerator(lastRegister + n, variableMap, functionMap))
+    // (Register(lastRegister + 1), IRGenerator(lastRegister + 1, variableMap, functionMap))
   }
+
+  def getNewRegisters(n: Int): IRMonad[List[Register]] = {
+    IRMonad(ir => {
+      if (n == 0) {
+        (Nil, ir, Nil)
+      } else {
+        val registers = (ir.lastRegister + 1)
+          .to(ir.lastRegister + n)
+          .map(id => Register(id))
+          .toList
+        assert(registers.size == n)
+        assert(registers.last.id == ir.lastRegister + n)
+        (
+          Nil,
+          IRGenerator(ir.lastRegister + n, ir.variableMap, ir.functionMap),
+          registers
+        )
+      }
+    })
+  }
+
+  def getAddressOfLvalue(e: AstC): IRMonad[Operand] = e match {
+    case Identifier(name, t) =>
+      IRMonad(ir => { (Nil, ir, ir.variableMap.get(name).get) })
+    case Dereference(ptr, t) => {
+      for {
+        innerAddress <- getAddressOfLvalue(ptr)
+        reg <- getNewRegister()
+        _ <- IRMonad.emit(IR.Load(innerAddress, reg, width = t.size().toInt))
+      } yield reg
+    }
+    case _ =>
+      throw RuntimeException(
+        s"Did not manage to get address of expression ${e}, maybe its not an lvalue."
+      )
+  }
+
   // creates a new expression, possibly by adding more instructions before it.
   // This returns a list of instructions, followed by an operand which will equal the expression
   // we want to generate and can be embedded in future codegens.
-  def produceExpression(e: AstC): (List[Instruction], Operand, IRGenerator) = {
+
+  def produceExpression(e: AstC): IRMonad[Operand] = {
     e match {
       case IntLiteral(value, t) => {
-        (List(), Immediate(value), this)
+        IRMonad.just(Immediate(value))
       }
       case Add(l, r, t) => {
-        val (lpre, lop, ir2) = this.produceExpression(l)
-        val (rpre, rop, ir3) = ir2.produceExpression(r)
-        val (reg, ir4) = ir3.getNewRegister()
-        val fop = IR.Add(lop, rop, reg)
-        (lpre ++ rpre :+ fop, reg, ir4)
+        for {
+          lop <- produceExpression(l)
+          rop <- produceExpression(r)
+          reg <- getNewRegister()
+          _ <- IRMonad.emit(IR.Add(lop, rop, reg))
+        } yield (reg)
       }
       case Mult(l, r, t) => {
-        val (lpre, lop, ir2) = this.produceExpression(l)
-        val (rpre, rop, ir3) = ir2.produceExpression(r)
-        val (reg, ir4) = ir3.getNewRegister()
-        val fop = IR.Mult(lop, rop, reg)
-        (lpre ++ rpre :+ fop, reg, ir4)
+        for {
+          lop <- produceExpression(l)
+          rop <- produceExpression(r)
+          reg <- getNewRegister()
+          _ <- IRMonad.emit(IR.Mult(lop, rop, reg))
+        } yield (reg)
       }
       case Neg(inner, t) => {
-        val (lpre, lop, ir2) = this.produceExpression(inner)
-        val (reg, ir3) = ir2.getNewRegister()
-        val fop = IR.Neg(lop, reg)
-        (lpre :+ fop, reg, ir3)
+        for {
+          lop <- produceExpression(inner)
+          reg <- getNewRegister()
+          _ <- IRMonad.emit(IR.Neg(lop, reg))
+        } yield reg
       }
 
       case Dereference(e, t) => {
-        val (lpre, lop, ir2) = this.produceExpression(e)
-        val (destReg, ir3) = ir2.getNewRegister()
-        val ops = List(
-          IR.Load(lop, destReg)
-          )
-        (lpre ++ ops, destReg, ir3)
+        for {
+          lop <- produceExpression(e)
+          reg <- getNewRegister()
+          _ <- IRMonad.emit(IR.Load(lop, reg))
+        } yield reg
       }
 
       case AddressOf(e, t) => {
-        val (lpre, lop, ir2) = this.produceExpression(e)
-        val (ops2,addr, ir3) = ir2.getAddressOfLvalue(e)
-        (lpre ++ ops2, addr, ir3)
+        for {
+          lop <- produceExpression(e)
+          addr <- getAddressOfLvalue(e)
+        } yield (addr)
       }
 
       case FunctionCall(callee, args, t) => {
         (callee, callee.t) match {
           case (Identifier(name, idt), FunT(ret, params)) => {
-            val preops = args.foldLeft(
-              (Nil: List[Instruction], this, Nil: List[Operand])
-            )((acc, x) => {
-              val (ins, op, newIr) = (acc._2).produceExpression(x)
-              (acc._1 ++ ins, newIr, (acc._3) :+ op)
-            })
-            val (reg, irFinal) = preops._2.getNewRegister()
-            val op = IR.Call(Label(name), preops._3, reg)
-            (preops._1 :+ op, reg, irFinal)
+            for {
+              computedArgs <- IRMonad.sequence(
+                args.map(arg => produceExpression(arg))
+              )
+              reg <- getNewRegister()
+              _ <- IRMonad.emit(IR.Call(Label(name), computedArgs, reg))
+            } yield (reg)
           }
           case _ =>
             throw RuntimeException(
@@ -136,13 +253,12 @@ class IRGenerator(
       }
       case Identifier(name, t) => {
         t match {
-          case NumT(_,_,_) | PtrT(_,_) => {
-            val reg = variableMap(name)
-            val (destReg, ir2) = this.getNewRegister()
-            val ops = List(
-              IR.Load(reg, destReg, width = t.size().toInt)
-            )
-            (ops, destReg, ir2)
+          case NumT(_, _, _) | PtrT(_, _) => {
+            for {
+              idReg <- IRMonad.nameLookup(name)
+              destReg <- getNewRegister()
+              _ <- IRMonad.emit(IR.Load(idReg, destReg, width = t.size().toInt))
+            } yield destReg
           }
           case _ => {
             throw RuntimeException(
@@ -150,18 +266,17 @@ class IRGenerator(
             )
           }
         }
-
       }
-
       case Assignment(leftSide, rightSide) => {
-        val loweredAssignment = lower(e)
-        val (ops1, op, ir2) = loweredAssignment._2.getAddressOfLvalue(leftSide)
-        val (destReg, ir3) = ir2.getNewRegister()
-        // we want to return a register containing the value we're assigning to.
-        val ops = loweredAssignment._1 :+ Load(op, destReg, width=leftSide.t.size().toInt)
-        (ops1 ++ ops, destReg, ir3)
+        for {
+          loweredAssignment <- lower(e)
+          addr <- getAddressOfLvalue(leftSide)
+          destReg <- getNewRegister()
+          _ <- IRMonad.emit(
+            Load(addr, destReg, width = leftSide.t.size().toInt)
+          )
+        } yield destReg
       }
-
       case _ => {
         throw RuntimeException(
           "Tried to produce expression for non-expression ast node."
@@ -169,39 +284,34 @@ class IRGenerator(
       }
     }
   }
-
-  def getAddressOfLvalue(e: AstC): (List[Instruction], Operand, IRGenerator) = e match {
-    case Identifier(name, t) => (Nil, variableMap.get(name).get, this)
-    case Dereference(ptr, t) => {
-      val innerApl = getAddressOfLvalue(ptr)
-      val (destReg, ir2) = innerApl._3.getNewRegister()
-      val ops = List(
-        IR.Load(innerApl._2, destReg, width = t.size().toInt)
-      )
-      (ops, destReg, ir2)
-    }
-    case _ => throw RuntimeException(s"Did not manage to get address of expression ${e}, maybe its not an lvalue.")
+  def pub_lower(e: AstC): List[Instruction] = {
+    val ir = IRGenerator.newIrGenerator()
+    val monad = lower(e)
+    monad.run(ir)._1
   }
 
-  def lower(e: AstC): (List[Instruction], IRGenerator) = {
+  def lower(e: AstC): IRMonad[Unit] = {
     e match {
-      // evaluate the expression, in case it has side effects,
-      // but ignore the result.
-      case IntLiteral(_,_) | Add(_,_,_) | Mult(_,_,_) | Neg(_,_) | FunctionCall(_,_,_) | Identifier(_,_) => {
-        val res = produceExpression(e)
-        (res._1, res._3)
+      // evaluate the expression, in case it has side effects, but ignore the result.
+      case IntLiteral(_, _) | Add(_, _, _) | Mult(_, _, _) | Neg(_, _) |
+          FunctionCall(_, _, _) | Identifier(_, _) => {
+        for {
+          res <- produceExpression(e)
+        } yield ()
       }
       case VarDefinition(name, t) => {
-        val (reg,ir2) = this.getNewRegister()
-        (List(
-          Alloc(reg, t.size(), t.alignment()),
-        ), ir2.withNewVariableMap(name, reg))
+        for {
+          reg <- getNewRegister()
+          _ <- IRMonad.emit(Alloc(reg, t.size(), t.alignment()))
+          _ <- IRMonad.withNewVariable(name, reg)
+        } yield ()
       }
       case Assignment(leftSide, rightSide) => {
-        val (ops1, op1, ir1) = getAddressOfLvalue(leftSide)
-        val (ops2, op2, ir2) = ir1.produceExpression(rightSide)
-        // TODO: breaks for types with different widths, structs, etc.
-        (ops1 ++ ops2 :+ Store(op2, op1, width = rightSide.t.size().toInt), ir2)
+        for {
+          lop <- getAddressOfLvalue(leftSide)
+          rop <- produceExpression(rightSide)
+          _ <- IRMonad.emit(Store(rop, lop, width = rightSide.t.size().toInt))
+        } yield ()
       }
 
       case FunctionDefinition(name, paramNames, body, ofType) => {
@@ -212,59 +322,52 @@ class IRGenerator(
 
         assert(paramNames.size == paramTypes.size)
 
-        val (paramRegs, ir2) = this.getNewRegisters(paramNames.size)
-        val (stackParamRegs, ir3) = ir2.getNewRegisters(paramNames.size)
-
-        val addedOps = paramRegs.lazyZip(stackParamRegs).lazyZip(paramTypes).flatMap((paramReg, stackParamReg, t) => {
-          List(
-              Alloc(stackParamReg, t.size(), t.alignment()),
-              Store(paramReg, stackParamReg, width=t.size().toInt)
-            )
-        })
-
-        val addedRegs = paramNames.zip(stackParamRegs).map((paramName, stackParamReg) => {
-          (paramName, stackParamReg)
-        })
-
-        val newRegs = variableMap ++ addedRegs
-
-        val newIr = ir3.withNewVariableMap(newRegs)
-
-        val execBody = newIr.lower(body)
-
-        val funLabel = Label(name)
-
-        val finalOps = List(
-          Fun(
-            funLabel, paramRegs
-            )
-        ) ++ addedOps ++ execBody._1
-
-        val finalIrGen = this.withLastRegisterOf(execBody._2)
-        (finalOps, finalIrGen)
-      } case Block(statements) => {
-        val (innerOps, innerIrGen) = statements.foldLeft(List():List[Instruction], this)((acc, current) => {
-          val (previousOps, previousIrGen) = acc
-          val x = previousIrGen.lower(current)
-          (previousOps ++ x._1, x._2)
-        })
-        // we don't want to take the IRGen (scope, etc.) of the block. Just take the register count
-        (innerOps, this.withLastRegisterOf(innerIrGen))
+        // TODO this might mess up scope but I'm not 100% sure.
+        for {
+          paramRegs <- getNewRegisters(paramNames.size)
+          stackParamRegs <- getNewRegisters(paramNames.size)
+          addedOps = paramRegs
+            .lazyZip(stackParamRegs)
+            .lazyZip(paramTypes)
+            .flatMap((paramReg, stackParamReg, t) => {
+              List(
+                Alloc(stackParamReg, t.size(), t.alignment()),
+                Store(paramReg, stackParamReg, width = t.size().toInt)
+              )
+            })
+          addedRegs = paramNames
+            .zip(stackParamRegs)
+            .map((paramName, stackParamReg) => {
+              (paramName, stackParamReg)
+            })
+          _ <- IRMonad.withNewVariables(addedRegs) // add the variable names
+          funLabel = Label(name)
+          _ <- IRMonad.emit(Fun(funLabel, paramRegs))
+          _ <- IRMonad.emit(addedOps)
+          execBody <- lower(body)
+        } yield ()
       }
-      
+
+      // TODO: This definitely messes up scope. Fix it.
+      case Block(statements) => {
+        for {
+          loweredStatements <- IRMonad.sequence(statements.map(stmt => {
+            lower(stmt)
+          }))
+        } yield ()
+      }
+
       case TranslationUnit(statements) => {
-        val (innerOps, innerIrGen) = statements.foldLeft(List():List[Instruction], this)((acc, current) => {
-          val (previousOps, previousIrGen) = acc
-          val x = previousIrGen.lower(current)
-          (previousOps ++ x._1, x._2)
-        })
-        // we don't want to take the IRGen (scope, etc.) of the block. Just take the register count
-        (innerOps, this.withLastRegisterOf(innerIrGen))
+        for {
+          loweredStatements <- IRMonad.sequence(statements.map(stmt => lower(stmt)))
+        } yield ()
       }
 
       case Return(e) => {
-        val (ops, op, ir2) = this.produceExpression(e)
-        (ops :+ IR.Return(op), ir2)
+        for {
+          loweredE <- produceExpression(e)
+          _ <- IRMonad.emit(IR.Return(loweredE))
+        } yield ()
       }
 
       case Cast(e, t) => {
@@ -272,16 +375,13 @@ class IRGenerator(
       }
 
       case Seq(statements) => {
-        val (innerOps, innerIrGen) = statements.foldLeft(List():List[Instruction], this)((acc, current) => {
-          val (previousOps, previousIrGen) = acc
-          val x = previousIrGen.lower(current)
-          (previousOps ++ x._1, x._2)
-        })
-        // here we dont want to keep the same IrGen since Seq doesnt create a new scope
-        (innerOps, innerIrGen)
-
+        for {
+          loweredStatements <- IRMonad.sequence(
+            statements.map(stmt => lower(stmt))
+          )
+        } yield ()
       }
+
     }
   }
-
 }
