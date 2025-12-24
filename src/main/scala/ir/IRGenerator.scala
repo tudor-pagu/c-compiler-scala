@@ -7,6 +7,8 @@ import tpagu.compiler.typeChecker.{FunT, NumT}
 import tpagu.compiler.ir.IR.Load
 import tpagu.compiler.typeChecker.PtrT
 
+type VariableMap = Map[String, Register]
+
 def isValidWidth(width: Int) =
   width == 1 || width == 2 || width == 4 || width == 8
 
@@ -77,6 +79,26 @@ object IRMonad {
     }
   }
 
+  /**
+   * These two functions are used to save and restore the variable map, in order to
+   * achieve certain scoping semantics.
+   */
+  def saveVariableMap(): IRMonad[VariableMap] = {
+    IRMonad(ir => {
+      (Nil, ir, ir.variableMap)
+    })
+  }
+
+  def restoreVariableMap(variableMap: VariableMap): IRMonad[Unit] = {
+    IRMonad(ir => {
+      (Nil, ir.withNewVariableMap(variableMap), ())
+    })
+  }
+
+  /*
+   * -------
+   */
+
 }
 
 // ***
@@ -89,7 +111,7 @@ class IRGenerator(
     val lastRegister: Int,
     // map from a name that should be in scope to a register containing an address to it (either in the stack
     // or in global scope)
-    val variableMap: Map[String, Register],
+    val variableMap: VariableMap,
     val functionMap: Map[String, Label]
 ) {
   def nameLookup(name: String): Register = {
@@ -351,15 +373,19 @@ object IRGenerator {
       // TODO: This definitely messes up scope. Fix it.
       case Block(statements) => {
         for {
+          vMap <- IRMonad.saveVariableMap()
           loweredStatements <- IRMonad.sequence(statements.map(stmt => {
             lower(stmt)
           }))
+          _ <- IRMonad.restoreVariableMap(vMap)
         } yield ()
       }
 
       case TranslationUnit(statements) => {
         for {
-          loweredStatements <- IRMonad.sequence(statements.map(stmt => lower(stmt)))
+          loweredStatements <- IRMonad.sequence(
+            statements.map(stmt => lower(stmt))
+          )
         } yield ()
       }
 
