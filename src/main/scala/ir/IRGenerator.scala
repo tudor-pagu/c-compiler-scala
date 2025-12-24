@@ -346,6 +346,11 @@ object IRGenerator {
 
         // TODO this might mess up scope but I'm not 100% sure.
         for {
+          // we save and restore the variable map to maintain scoping semantics:
+          // Whatever happens inside a function (including params, etc.) should not 
+          // leak outside of it
+          vMap <- IRMonad.saveVariableMap()
+
           paramRegs <- getNewRegisters(paramNames.size)
           stackParamRegs <- getNewRegisters(paramNames.size)
           addedOps = paramRegs
@@ -367,10 +372,12 @@ object IRGenerator {
           _ <- IRMonad.emit(Fun(funLabel, paramRegs))
           _ <- IRMonad.emit(addedOps)
           execBody <- lower(body)
+
+          // restore variable map. See comment at the top of this for.
+          _ <- IRMonad.restoreVariableMap(vMap)
         } yield ()
       }
 
-      // TODO: This definitely messes up scope. Fix it.
       case Block(statements) => {
         for {
           vMap <- IRMonad.saveVariableMap()
