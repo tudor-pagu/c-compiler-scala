@@ -354,7 +354,7 @@ class IrInterpreterTest extends FunSuite {
       }
       """,
       42
-      )
+    )
   }
   test("empty main returns 0") {
     irInterpHelper(
@@ -363,7 +363,95 @@ class IrInterpreterTest extends FunSuite {
       }
       """,
       0
-      )
+    )
+  }
+
+  test("inner scope test") {
+    irInterpHelper(
+      """
+      int main() {
+        int a = 42;
+        {
+          int a = 3;
+        }
+        return a;
+      }
+      """,
+      42
+    )
+
+    irInterpHelper(
+      """
+      int main() {
+        int a = 42;
+        {
+          int b = 3;
+        }
+        return a;
+      }
+      """,
+      42
+    )
+
+    irInterpHelper(
+      """
+      int main() {
+        int a = 42;
+        {
+          a = 3;
+        }
+        return a;
+      }
+      """,
+      3
+    )
+
+    irInterpHelper(
+      """
+      int main() {
+        int a = 42;
+        int b;
+        {
+          b = a;
+          int a = 45;
+        }
+        return b;
+      }
+      """,
+      42
+    )
+    irInterpHelper(
+      """
+      int main() {
+        int a = 42;
+        int b;
+        {
+          b = a;
+          int a = 45;
+          b = a;
+        }
+        return b;
+      }
+      """,
+      45
+    )
+
+    irInterpHelper(
+      """
+      int main() {
+        int a = 42;
+        int b;
+        {
+          int a = 45;
+          b = a;
+        }
+        b = a;
+        return b;
+      }
+      """,
+      42
+    )
+
   }
 
 }
