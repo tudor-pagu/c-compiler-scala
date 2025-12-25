@@ -3,19 +3,107 @@ import tpagu.compiler.{CompilerError, Span, File}
 import tpagu.compiler.parser.{Declaration}
 import tpagu.compiler.typeChecker.{Type, NumT}
 
-enum Token:
-  case Identifier(name: String)
-  case Number(value: String)
-  case OpenParen, CloseParen
-  case OpenBrace, CloseBrace
-  case Semicolon, Comma
-  case Plus, Minus, Times, Div, Ampersand
-  case Assign
-  case EOF
-  case Int
-  case Long
-  case Return
-  case Const
+sealed trait Token {
+  def transitionFromEmpty(c: Char): Boolean = false
+  def transitionFromToken(tok: Token, c: Char): Boolean =
+    false // will be needed for a few tokens like ++
+  def transitionFromFinishedId(s: String): Boolean = false
+  def isAcceptable(): Boolean = false
+}
+
+object Token {
+  case class Identifier(name: String) extends Token
+  case class Number(value: String) extends Token
+
+  case object OpenParen extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '('
+    override def isAcceptable(): Boolean = true
+
+  case object CloseParen extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == ')'
+    override def isAcceptable(): Boolean = true
+
+  case object OpenBrace extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '{'
+    override def isAcceptable(): Boolean = true
+
+  case object CloseBrace extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '}'
+    override def isAcceptable(): Boolean = true
+
+  case object Semicolon extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == ';'
+    override def isAcceptable(): Boolean = true
+
+  case object Comma extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == ','
+    override def isAcceptable(): Boolean = true
+
+  case object Plus extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '+'
+    override def isAcceptable(): Boolean = true
+
+  case object Minus extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '-'
+    override def isAcceptable(): Boolean = true
+
+  case object Times extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '*'
+    override def isAcceptable(): Boolean = true
+
+  case object Div extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '/'
+    override def isAcceptable(): Boolean = true
+
+  case object Ampersand extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '&'
+    override def isAcceptable(): Boolean = true
+
+  case object Assign extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '='
+    override def isAcceptable(): Boolean = true
+
+  case object EOF extends Token:
+    override def isAcceptable(): Boolean = false
+
+  case object Int extends Token:
+    override def transitionFromFinishedId(s: String): Boolean = s == "int"
+    override def isAcceptable(): Boolean = true
+
+  case object Long extends Token:
+    override def transitionFromFinishedId(s: String): Boolean = s == "long"
+    override def isAcceptable(): Boolean = true
+
+  case object Return extends Token:
+    override def transitionFromFinishedId(s: String): Boolean = s == "return"
+    override def isAcceptable(): Boolean = true
+
+  case object Const extends Token:
+    override def transitionFromFinishedId(s: String): Boolean = s == "const"
+    override def isAcceptable(): Boolean = true
+
+  val allTokens: Seq[Token] = Seq(
+    OpenParen,
+    CloseParen,
+    OpenBrace,
+    CloseBrace,
+    Semicolon,
+    Comma,
+    Plus,
+    Minus,
+    Times,
+    Div,
+    Ampersand,
+    Assign,
+    EOF,
+    Int,
+    Long,
+    Return,
+    Const
+  )
+}
+
+// object Identifier
 
 case class TokenInfo(token: Token, span: Span)
 
@@ -74,45 +162,43 @@ class Lexer private (
       c: Char
   ): Empty | Accept | Token | CompilerError = token match
     case Empty() =>
-      c match
-        case '('                 => Token.OpenParen
-        case ')'                 => Token.CloseParen
-        case ';'                 => Token.Semicolon
-        case ','                 => Token.Comma
-        case '+'                 => Token.Plus
-        case '-'                 => Token.Minus
-        case '*'                 => Token.Times
-        case '&'                 => Token.Ampersand
-        case '/'                 => Token.Div
-        case '='                 => Token.Assign
-        case '{'                 => Token.OpenBrace
-        case '}'                 => Token.CloseBrace
-        case d if d.isDigit      => Token.Number(d.toString)
-        case i if i.isLetter     => Token.Identifier(i.toString)
-        case _ if c.isWhitespace => Empty()
-        case _ => throw new Exception(s"Unexpected character: $c")
+      Token.allTokens
+        .filter(value => value.transitionFromEmpty(c))
+        .headOption match {
+        case Some(tok) => tok
+        case None =>
+          c match {
+            case d if d.isDigit  => Token.Number(d.toString)
+            case i if i.isLetter => Token.Identifier(i.toString)
+            case _ if c.isWhitespace => Empty()
+            case _ => throw new Exception(s"Unexpected character: $c")
+          }
+      }
     case token @ Token.Identifier(name) =>
       c match
         case i if i.isLetterOrDigit => Token.Identifier(name + i.toString)
-        case _ if name == "return" => Accept(Token.Return)
-        case _ if name == "const" => Accept(Token.Const)
-        case _ if name == "int" => Accept(Token.Int)
-        case _ if name == "long" => Accept(Token.Int)
-        case _ => Accept(token)
+        case _ => {
+          Token.allTokens
+            .filter(value => value.transitionFromFinishedId(name))
+            .headOption match {
+            case Some(tok) => Accept(tok)
+            case _ =>
+              Accept(
+                token
+              ) // fall back to just returning an identifier if no keyword takes it
+          }
+        }
 
     case token @ Token.Number(value) =>
       c match
         case d if d.isDigit => Token.Number(value + d.toString)
         case _              => Accept(token)
-    case t @ (Token.OpenParen | Token.CloseParen | Token.Semicolon | Token.EOF |
-        Token.Plus | Token.Minus | Token.Times | Token.Ampersand | Token.Div | Token.Comma |
-        Token.Assign | Token.OpenBrace | Token.CloseBrace) =>
+    case t: Token if t.isAcceptable() => {
       Accept(t)
-    case t @ (Token.Long | Token.Int | Token.Return | Token.Const) =>
+    }
+    case t: Token => {
       throw new RuntimeException(
         s"Had to transition from state ${t} in lexer, but this state should only appear immediately before accepting, so this should be unreachable."
       )
-
-    // case _ =>
-    //   makeError(s"Received invalid character $c.")
+    }
 }
