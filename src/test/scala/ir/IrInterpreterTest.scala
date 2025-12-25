@@ -21,6 +21,7 @@ class IrInterpreterTest extends FunSuite {
     val empty: Map[String, Type] = Map()
     typeChecker.typeOf(ast, empty)
     implicit val typeMap = typeChecker.typeMap
+    implicit val declarationTypeMap = typeChecker.declarationTypeMap
     val coreAst = Desugar.desugar(ast)
     val program = IRGenerator.pub_lower(coreAst)
     val interpreter = IrInterpreter()

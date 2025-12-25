@@ -11,12 +11,13 @@ import tpagu.compiler.parser.PostfixOp
 import tpagu.compiler.typeChecker.getTypeOfDeclaration
 import tpagu.compiler.Span
 import tpagu.compiler.parser.AstExtKind.ExprStatement
+import tpagu.compiler.parser.Declarator
 
 object Desugar {
   // the typeMap is produced by the TypeChecker as it type checks a program.
   // It will cache the type of every AstExt it encounters so that we can use it in the
   // desugarer
-  def desugar(e: AstExt)(implicit typeMap: IdentityHashMap[AstExt, Type]): AstC = {
+  def desugar(e: AstExt)(implicit typeMap: IdentityHashMap[AstExt, Type], declarationTypeMap: IdentityHashMap[Declarator, Type]): AstC = {
     e.node match {
       case AstExtKind.IntLiteral(num) => IntLiteral(num, typeMap.get(e))
       case AstExtKind.Binary(op, l, r) =>
@@ -41,7 +42,7 @@ object Desugar {
           assert(initDecl._1.direct.getName().isDefined)
 
           implicit val span: Span = e.span // at this point, we should *never* get a compiler error when deducing this type, since it got typechecked.
-          val declaredType = getTypeOfDeclaration(declSpecifiers, initDecl._1)
+          val declaredType = declarationTypeMap.get(initDecl._1)
           val init = initDecl._2.map(i => Desugar.desugar(i))
           val varDef = VarDefinition(initDecl._1.direct.getName().get, declaredType)
           if (init.isDefined) then {

@@ -4,6 +4,8 @@ import tpagu.compiler.lexer.Token
 import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.CompilerError
 import tpagu.compiler.lexer.TokenInfo
+import tpagu.compiler.typeChecker.getNameOfDeclarator
+import tpagu.compiler.Spanned
 
 def expressionStatement: ParseRule[AstExt] = (for {
   expr <- expression
@@ -31,23 +33,55 @@ def declarator: ParseRule[Declarator] =
     decl <- directDeclarator
   } yield Right(Declarator(ptr, decl)))
 
-def typeSpecifier: ParseRule[DeclarationSpecifier] =
-  (OneOf(List(Token.Int, Token.Long)).map(tok =>
-      tok.token match {
-        case Token.Int => Right(TypeSpecifier.Int)
-        case Token.Long => Right(TypeSpecifier.Long)
-        case _ => throw RuntimeException("This branch shouldnt be reachable in type specifier. Check the oneOf and the branches you handle match.")
+// needed because Just() won't work with class tokens (not singletons)
+def typedefName: ParseRule[TypeSpecifier.TypedefName] = {
+  new ParseRule[TypeSpecifier.TypedefName] {
+    def parse(
+        lexer: Lexer
+    ): Either[CompilerError, (TypeSpecifier.TypedefName, Lexer)] = {
+      val res = lexer.nextToken()
+      res match {
+        case Left(err) => Left(err)
+        // TODO: Handle string and char literals, including escaping, etc.
+        case Right(TokenInfo(Token.TypedefName(name), span), lexer2) =>
+          Right(TypeSpecifier.TypedefName(name), lexer2)
+        case Right(TokenInfo(_, span), _) =>
+          Left(parserError("Could not parse typedef name.", span))
       }
-  )).named("type specifier")
+    }
+  }.named("typedefName")
+}
+
+def typeSpecifier: ParseRule[DeclarationSpecifier] =
+  (OneOf(List(Token.Int, Token.Long))
+    .map(tok =>
+      tok.token match {
+        case Token.Int  => Right(TypeSpecifier.Int)
+        case Token.Long => Right(TypeSpecifier.Long)
+        case _ =>
+          throw RuntimeException(
+            "This branch shouldnt be reachable in type specifier. Check the oneOf and the branches you handle match."
+          )
+      }
+      )) <|>
+    typedefName.map(x => Right(x:DeclarationSpecifier))
+    .named("type specifier")
 
 def typeQualifier: ParseRule[TypeQualifier] =
   (for {
     _ <- Just(Token.Const)
   } yield Right(TypeQualifier.Const))
 
+def storageClassSpecifier: ParseRule[DeclarationSpecifier] =
+  (
+    for {
+      _ <- Just(Token.Typedef)
+    } yield Right(StorageClassSpecifier.Typedef)
+  )
+
 def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
   // this map upcast is needed since typeQualifier returns TypeSpecifier but for the Or parser combinator these must be the exact same type
-  (typeSpecifier <|> typeQualifier.map(a => Right(a: DeclarationSpecifier)))
+  (typeSpecifier <|> typeQualifier.map(a => Right(a: DeclarationSpecifier)) <|> storageClassSpecifier)
 }
 
 def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {
@@ -70,6 +104,24 @@ def declaration: ParseRule[AstExt] =
     decl <- listOf(initDeclarator)
     _ <- Just(Token.Semicolon)
   } yield Right(AstExtKind.DeclarationList(specs, decl))).withSpan
+    .withUpdatedLexer((output, lexer) => {
+      output.node match {
+        case AstExtKind.DeclarationList(specs, decl) => {
+          /** typedef handling within the parser:
+           *  This is where we give feedback to the parser so that it knows to now treat any 
+           *  example of these names as a Typename and then pass the token back to the parser
+           *  as TypedefNames.
+           */
+          if (specs.contains(StorageClassSpecifier.Typedef)) {
+            val names = decl.map(d => getNameOfDeclarator(d._1)).filter(_.isDefined).map(_.get)
+            lexer.withTypeNames(lexer.typeNames ++ names)
+          } else {
+            lexer
+          }
+        }
+        case _ => throw RuntimeException("Unreachable code, declaration rule should always yield a DeclarationList.")
+      }
+    })
     .named("declaration")
 
 def parameterDeclaration: ParseRule[Declaration] =

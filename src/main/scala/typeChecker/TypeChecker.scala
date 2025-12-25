@@ -40,9 +40,12 @@ object TypeCheck {
 class TypeCheck {
   // typeMap gives hints to the desugarer when creating the typed, core AST.
   var typeMap: IdentityHashMap[AstExt, Type] = IdentityHashMap()
+  var declarationTypeMap: IdentityHashMap[Declarator, Type] = IdentityHashMap()
 
   def typeOf(e: AstExt, nv: TypeEnvironment): (Type, TypeEnvironment) =
     implicit val span: Span = e.span
+    implicit val typeEnvironment: TypeEnvironment = nv
+
     val result = e.node match {
       case AstExtKind.IntLiteral(_) => (NumT(4), nv)
       case AstExtKind.Binary(op, l, r) =>
@@ -132,7 +135,7 @@ class TypeCheck {
           val declaredType = getTypeOfDeclaration(declSpecifiers, declarator)
           init.map(initValue => {
 
-            isAssignmentSafe(declaredType, typeOf(initValue, nv)._1) match {
+            isAssignmentSafe(declaredType, typeOf(initValue, newNv)._1) match {
               case Left(reason) => {
                 throw createError(
                   s"Type of initializer did not match declared type. Reason: ${reason}",
@@ -150,6 +153,7 @@ class TypeCheck {
             )
           )
           newNv = newNv + (name -> declaredType)
+          declarationTypeMap.put(declarator, declaredType)
         }
         (NoneT(), newNv)
       }
@@ -235,7 +239,7 @@ class TypeCheck {
 }
 
 def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
-    span: Span
+    span: Span, typeEnvironment: TypeEnvironment
 ): Type = {
   val typeSpecifiers = declSpecifiers
     .filter {
@@ -245,6 +249,30 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
   if (typeSpecifiers.isEmpty) {
     throw createError("No valid type specifier found in declaration.", span);
   }
+
+  val typedefNames= typeSpecifiers.filter(x => x match {
+    case TypeSpecifier.TypedefName(name) => true
+    case _ => false
+  }).map( x => x match
+    case TypeSpecifier.TypedefName(name) => name
+    )
+
+  val numTypedefNames = typedefNames.length
+
+  if (numTypedefNames > 0) {
+    if (numTypedefNames > 1) {
+      throw createError("Cannot have more than one typedef name in a declaration", span);
+    }
+
+    val typeOfTypedef = typeEnvironment.get(typedefNames.head)
+    typeOfTypedef match {
+      case Some(t) => {
+        return t
+      }
+      case _ => throw RuntimeException("Undefined typedef in type checker even though that makes no sense; how did the lexer give us a typename?")
+    }
+  }
+  
   // handling of integer types
   val numInt = typeSpecifiers.count(_ == TypeSpecifier.Int)
   val numLong = typeSpecifiers.count(_ == TypeSpecifier.Long)
@@ -304,7 +332,7 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
   );
 }
 
-def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type =
+def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span, typeEnvironment: TypeEnvironment): Type =
   getTypeOfDeclaration(
     declaration.declarationSpecifiers,
     declaration.declarator
@@ -320,7 +348,7 @@ def combineQualifiers(quals: List[TypeQualifier]): TypeQualifiers = {
 def getTypeOfDeclaration(
     declSpecifiers: List[DeclarationSpecifier],
     declarator: Declarator
-)(implicit span: Span): Type = {
+)(implicit span: Span, typeEnvironment: TypeEnvironment): Type = {
   if (!declarator.pointers.isEmpty) {
     // we deal with pointer declarators recursively:
     val quals = declarator.pointers.last.qualifiers
@@ -351,7 +379,7 @@ def getNameOfDeclarator(declarator: Declarator): Option[String] =
 
 def getParameterMappings(
     f: Declaration
-)(implicit span: Span): Map[String, Type] = f.declarator.direct match {
+)(implicit span: Span, typeEnvironment: TypeEnvironment): Map[String, Type] = f.declarator.direct match {
   case DirectDeclarator.Function(name, params) => {
     val x = params
       .filter(decl => decl.declarator.direct.getName().isDefined)

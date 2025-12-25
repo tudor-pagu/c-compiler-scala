@@ -27,6 +27,7 @@ class IrGenTest extends GoldCopyFunSuite {
     val empty: Map[String, Type] = Map()
     typeChecker.typeOf(ast, empty)
     implicit val typeMap = typeChecker.typeMap
+    implicit val declarationTypeMap = typeChecker.declarationTypeMap
     val coreAst = Desugar.desugar(ast)
     val irgen = IRGenerator.newIrGenerator()
     val program = IRGenerator.pub_lower(coreAst)

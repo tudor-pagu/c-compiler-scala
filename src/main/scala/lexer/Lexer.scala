@@ -2,6 +2,8 @@ package tpagu.compiler.lexer
 import tpagu.compiler.{CompilerError, Span, File}
 import tpagu.compiler.parser.{Declaration}
 import tpagu.compiler.typeChecker.{Type, NumT}
+import tpagu.compiler.lexer.Token.Identifier
+import tpagu.compiler.lexer.Token.TypedefName
 
 sealed trait Token {
   def transitionFromEmpty(c: Char): Boolean = false
@@ -14,6 +16,13 @@ sealed trait Token {
 object Token {
   case class Identifier(name: String) extends Token
   case class Number(value: String) extends Token
+
+  /*
+   * Special token: This refers to an identifier that has already been set to be a typename
+   * by an in scope typedef. The parser maintains the scope and tells the lexer what typedefs
+   * currently exist in scope.
+   */
+  case class TypedefName(name: String) extends Token
 
   case object OpenParen extends Token:
     override def transitionFromEmpty(c: Char): Boolean = c == '('
@@ -82,6 +91,10 @@ object Token {
     override def transitionFromFinishedId(s: String): Boolean = s == "const"
     override def isAcceptable(): Boolean = true
 
+  case object Typedef extends Token:
+    override def transitionFromFinishedId(s: String): Boolean = s == "typedef"
+    override def isAcceptable(): Boolean = true
+
   val allTokens: Seq[Token] = Seq(
     OpenParen,
     CloseParen,
@@ -99,7 +112,8 @@ object Token {
     Int,
     Long,
     Return,
-    Const
+    Const,
+    Typedef
   )
 }
 
@@ -116,8 +130,11 @@ val builtinTypeTable: Map[String, Type] = Map(
 
 class Lexer private (
     val input: File,
-    val ind: Int
+    val ind: Int,
+    val typeNames: Set[String] = Set()
 ) {
+  def withTypeNames(newTypeNames: Set[String]) = Lexer(input, ind, newTypeNames)
+
   def makeError(message: String): CompilerError =
     CompilerError(message, Span(ind, ind + 1, input))
 
@@ -136,7 +153,20 @@ class Lexer private (
           assert(currentState == Empty())
           currentState = Empty()
         case Accept(token) =>
-          return Right((makeTokenInfo(token, ind, i + 1), new Lexer(input, i)))
+          /*
+           * Typedef handling: If this identifier is actually typedef, switch it 
+           * out so the parser can treat is a typename, not an identifier.
+           */
+          val tokenToReturn = token match {
+            case Identifier(name) if typeNames.contains(name) => {
+              Token.TypedefName(name)
+            }
+            case _ => token
+          }
+
+          return Right(
+            (makeTokenInfo(tokenToReturn, ind, i + 1), new Lexer(input, i))
+          )
         case token: Token =>
           currentState = token
         case c: CompilerError =>
@@ -168,15 +198,15 @@ class Lexer private (
         case Some(tok) => tok
         case None =>
           c match {
-            case d if d.isDigit  => Token.Number(d.toString)
-            case i if i.isLetter => Token.Identifier(i.toString)
+            case d if d.isDigit      => Token.Number(d.toString)
+            case i if i.isLetter     => Token.Identifier(i.toString)
             case _ if c.isWhitespace => Empty()
             case _ => throw new Exception(s"Unexpected character: $c")
           }
       }
     case token @ Token.Identifier(name) =>
       c match
-        case i if i.isLetterOrDigit => Token.Identifier(name + i.toString)
+        case i if i.isLetterOrDigit || i == '_' => Token.Identifier(name + i.toString)
         case _ => {
           Token.allTokens
             .filter(value => value.transitionFromFinishedId(name))

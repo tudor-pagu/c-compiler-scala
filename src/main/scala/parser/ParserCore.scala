@@ -34,6 +34,9 @@ trait ParseRule[A] {
   def maybe: ParseRule[Option[A]] =
     Maybe(this)
 
+  def withUpdatedLexer(f: Out[A] => Lexer): ParseRule[A] =
+    UpdatedLexer(this, f)
+
   // Applicative operators
   def <*>[B](that: ParseRule[B]): ParseRule[(A, B)] =
     for { a <- this; b <- that } yield Right((a, b))
@@ -52,6 +55,17 @@ trait ParseRule[A] {
 
   override def toString: String = 
     if debugName != "" then s"ParseRule($debugName)" else super.toString
+}
+
+case class UpdatedLexer[A](parser: ParseRule[A], f: Out[A] => Lexer) extends ParseRule[A] {
+  def parse(lexer: Lexer): Either[CompilerError, Out[A]] = {
+    parser.parse(lexer) match {
+      case Left(err) => Left(err)
+      case Right((a, nextLexer)) => {
+        Right(a, f((a, nextLexer)))
+      }
+    }
+  }
 }
 
 case class Map[A, B](parser: ParseRule[A], f: A => Either[CompilerError, B])

@@ -618,4 +618,48 @@ class TypeCheckerTest extends FunSuite {
       """, "type long long and type int are not the same.")
   }
 
+  test("mixed pointer multiple inits") {
+    expectTypePass(
+      """
+      int main() {
+        int x = 2, *p = &x;
+        return *p;
+      }
+      """
+      )
+
+    expectTypeError(
+      """
+      int main() {
+        int x = 2, *p;
+        p = 3;
+      }
+      """, ""
+      )
+  }
+
+  test("typedef tests") {
+    expectTypePass(
+      """
+      int main() {
+        typedef int foo_t;
+        foo_t x = 2;
+        return x + 2;
+      }
+      """
+      )
+
+    // expectTypeError(
+    //   """
+    //   int main() {
+    //     {
+    //         typedef int foo_t;
+    //     }
+    //     foo_t x = 2;
+    //     return x + 2;
+    //   }
+    //   """,""
+    //   )
+  }
+
 }

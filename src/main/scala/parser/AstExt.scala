@@ -137,12 +137,18 @@ object TypeSpecifier {
   case object Unsigned extends TypeSpecifier {
     override def toString() = "unsigned"
   }
+
+  case class TypedefName(name: String) extends TypeSpecifier {
+    override def toString() = s"${name}(typedef)"
+  }
 }
 
 sealed trait StorageClassSpecifier extends DeclarationSpecifier
 
-case class TypedefSpec() extends StorageClassSpecifier {
-  override def toString() = "typedef"
+object StorageClassSpecifier {
+  case object Typedef extends StorageClassSpecifier {
+    override def toString() = "typedef"
+  }
 }
 
 sealed trait TypeQualifier extends DeclarationSpecifier
