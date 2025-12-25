@@ -720,4 +720,25 @@ class TypeCheckerTest extends FunSuite {
       )
   }
 
+  test("more complex typedefs") {
+    expectTypeError(
+      """
+      int main() {
+        typedef int int_sub;
+        long int_sub x;
+      }
+      """, ""
+      )
+
+    expectTypePass(
+      """
+      int main() {
+        long long typedef ll;
+        ll x;
+      }
+      """
+      )
+  }
+
+
 }

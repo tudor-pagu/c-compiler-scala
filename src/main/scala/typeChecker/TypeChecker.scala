@@ -260,6 +260,10 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
   val numTypedefNames = typedefNames.length
 
   if (numTypedefNames > 0) {
+    if (typeSpecifiers.length > 1) {
+      throw createError("Cannot have any other type specifiers besides a typedef name.", span)
+    }
+
     if (numTypedefNames > 1) {
       throw createError("Cannot have more than one typedef name in a declaration", span);
     }
