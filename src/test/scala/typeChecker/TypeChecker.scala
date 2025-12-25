@@ -707,5 +707,17 @@ class TypeCheckerTest extends FunSuite {
       """
       )
   }
+  test("nested typedefs") {
+    expectTypePass(
+      """
+      int main() {
+        typedef int int_sub;
+        typedef int_sub int_sub_2;
+        int_sub_2 y = 2;
+        return y + 1;
+      }
+      """
+      )
+  }
 
 }
