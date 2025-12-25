@@ -8,6 +8,25 @@ sealed trait Type {
   def size(): Long // all types need to know their size
   def alignment(): Long // all types need to know their alignment requirement
   def qualifiers: TypeQualifiers
+
+  private var _frontendName: Option[String] = None
+
+  def frontendName:Option[String] = _frontendName
+  def withFrontendName(name:String):Type = {
+    _frontendName = Some(name)
+    this
+  }
+  def withFrontendName(name:Option[String]):Type = {
+    _frontendName = name
+    this
+  }
+
+  def prettyName(): String = {
+    frontendName match {
+      case Some(name) => name
+      case None => toString
+    }
+  }
 }
 
 case class TypeQualifiers(
@@ -19,7 +38,6 @@ case class TypeQualifiers(
 case class NumT(width: Long, signed: Boolean = true, qualifiers: TypeQualifiers = TypeQualifiers()) extends Type {
   override def size(): Long = width
   override def alignment(): Long = width
-  override def toString(): String = s"NumT($width,$signed)"
 }
 
 case class PtrT(innerT: Type, qualifiers: TypeQualifiers = TypeQualifiers()) extends Type {
@@ -56,8 +74,8 @@ object Type {
 
   def dropQualifiers(t:Type):Type = {
     t match {
-      case NumT(w, s, _) => NumT(w, s)
-      case PtrT(i, _) => PtrT(i)
+      case NumT(w, s, _) => NumT(w, s).withFrontendName(t._frontendName)
+      case PtrT(i, _) => PtrT(i).withFrontendName(t._frontendName)
       case _ => t
     }
   }

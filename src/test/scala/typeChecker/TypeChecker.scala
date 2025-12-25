@@ -69,11 +69,11 @@ class TypeCheckerTest extends FunSuite {
     assertEquals(parseExpression(input)._1.toString(), expected)
 
   test("simple type checking") {
-    testResultingType("2 + 2", "NumT(4,true)")
+    testResultingType("2 + 2", "NumT(4,true,TypeQualifiers(false,false,false))")
   }
 
   test("simple type checking") {
-    testResultingType("2 - 2", "NumT(4,true)")
+    testResultingType("2 - 2", "NumT(4,true,TypeQualifiers(false,false,false))")
   }
 
   test("failure 1") {

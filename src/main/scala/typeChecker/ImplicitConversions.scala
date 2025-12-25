@@ -34,7 +34,7 @@ def isQualifierConvertible(from: Type, to: Type): Either[String, Unit] = {
     case _ => {
       if (fromWithoutQuals != toWithoutQuals) {
         Left(
-          s"type ${fromWithoutQuals} and type ${toWithoutQuals} are not the same."
+          s"type ${fromWithoutQuals.prettyName()} and type ${toWithoutQuals.prettyName()} are not the same."
         )
       } else {
         Right(())

@@ -286,12 +286,16 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
       throw createError("Cannot specify long more than twice.", span)
     }
 
+    if (numLong == 0) {
+      return NumT(4, signed, typeQualifiers).withFrontendName("int")
+    }
+
     if (numLong <= 1) {
-      return NumT(4, signed, typeQualifiers)
+      return NumT(4, signed, typeQualifiers).withFrontendName("long")
     }
 
     if (numLong == 2) {
-      return NumT(8, signed, typeQualifiers)
+      return NumT(8, signed, typeQualifiers).withFrontendName("long long")
     }
   }
 
