@@ -53,5 +53,13 @@ object Type {
   val defaultIntSize: Long = 4
   def numericalPromotion(t: NumT): Type = 
     if t.width < defaultIntSize then NumT(defaultIntSize , t.signed) else t
+
+  def dropQualifiers(t:Type):Type = {
+    t match {
+      case NumT(w, s, _) => NumT(w, s)
+      case PtrT(i, _) => PtrT(i)
+      case _ => t
+    }
+  }
 }
 

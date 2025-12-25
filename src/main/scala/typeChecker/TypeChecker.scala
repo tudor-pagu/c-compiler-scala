@@ -131,11 +131,15 @@ class TypeCheck {
         for ((declarator, init) <- initDeclaratorList) {
           val declaredType = getTypeOfDeclaration(declSpecifiers, declarator)
           init.map(initValue => {
-            if (typeOf(initValue, nv)._1 != declaredType) {
-              throw createError(
-                "Type of initializer did not match declared type.",
-                e.span
-              )
+
+            isAssignmentSafe(declaredType, typeOf(initValue, nv)._1) match {
+              case Left(reason) => {
+                throw createError(
+                  s"Type of initializer did not match declared type. Reason: ${reason}",
+                  e.span
+                )
+              }
+              case _ => {}
             }
           })
 
@@ -189,11 +193,14 @@ class TypeCheck {
           throw createError(s"Trying to assign to non-lvalue.", left.span)
         }
 
-        if typeLeft != typeRight then {
-          throw createError(
-            s"Type mismatch in assignment. You're trying to assign ${typeLeft} to ${typeRight}",
-            e.span
-          )
+        isAssignmentSafe(typeLeft, typeRight) match {
+          case Left(reason) => {
+            throw createError(
+              s"Type conversion failed. Reason: ${reason}",
+              e.span
+            )
+          }
+          case _ => {}
         }
 
         (typeRight, nv2)
@@ -243,7 +250,10 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
   val numLong = typeSpecifiers.count(_ == TypeSpecifier.Long)
 
   if (numInt == 0 && numLong == 0) {
-    throw createError("No type specifier indicating an actual type was found.", span);
+    throw createError(
+      "No type specifier indicating an actual type was found.",
+      span
+    );
   }
   val numUnsigned = typeSpecifiers.count(_ == TypeSpecifier.Unsigned)
   val numSigned = typeSpecifiers.count(_ == TypeSpecifier.Signed)
@@ -285,7 +295,9 @@ def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
     }
   }
 
-  throw RuntimeException("Reached end of get getBaseType, which shouldn't happen (we should throw an error early). There must be a bug here.");
+  throw RuntimeException(
+    "Reached end of get getBaseType, which shouldn't happen (we should throw an error early). There must be a bug here."
+  );
 }
 
 def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type =
@@ -307,9 +319,9 @@ def getTypeOfDeclaration(
 )(implicit span: Span): Type = {
   if (!declarator.pointers.isEmpty) {
     // we deal with pointer declarators recursively:
-    val quals = declarator.pointers.head.qualifiers
+    val quals = declarator.pointers.last.qualifiers
     val peeledDeclarator =
-      Declarator(declarator.pointers.tail, declarator.direct)
+      Declarator(declarator.pointers.init, declarator.direct)
     return PtrT(
       getTypeOfDeclaration(declSpecifiers, peeledDeclarator),
       combineQualifiers(quals)

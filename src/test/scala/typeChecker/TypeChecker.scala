@@ -421,7 +421,8 @@ class TypeCheckerTest extends FunSuite {
         int y;
         x = y;
       }
-      """,""
+      """,
+      ""
     )
 
   }
@@ -434,7 +435,158 @@ class TypeCheckerTest extends FunSuite {
         return 0;
       }
       """
-      )
+    )
   }
 
+  test("type conversion tests") {
+    expectTypePass(
+      """
+      int main() {
+        const int x = 2;
+        int y = x;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int x = 2;
+        const int y = x;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int x = 2;
+        const int const y = x;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int x = 2;
+        const int const y = x + 1;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int const x = 2;
+        const int const y = x + 1;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int const x = 2;
+        int y = x + 1;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int *x;
+        int const * y = x;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int const *x;
+        int const * y = x;
+      }
+      """
+    )
+    expectTypeError(
+      """
+      int main() {
+        int const *x;
+        int * y = x;
+      }
+      """,
+      ""
+    )
+    expectTypeError(
+      """
+      int main() {
+        int * const *x;
+        int * * y = x;
+      }
+      """,
+      ""
+    )
+    expectTypePass(
+      """
+      int main() {
+        int * * const x;
+        int * * y = x;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int * const x;
+        int * y = x;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int * * x;
+        int const * * y = x;
+      }
+      """
+    )
+    expectTypeError(
+      """
+      int main() {
+        int const * * x;
+        int * * y = x;
+      }
+      """,
+      ""
+    )
+    expectTypeError(
+      """
+      int main() {
+        int const * * * x;
+        int * * * y = x;
+      }
+      """,
+      ""
+    )
+    expectTypePass(
+      """
+      int main() {
+        int * * x;
+        int const * const * y = x;
+      }
+      """
+    )
+    expectTypePass(
+      """
+      int main() {
+        int * const p1;
+        int * p2 = p1;
+      }
+      """,
+    )
+    expectTypePass(
+      """
+      int main() {
+        int * const p1;
+        int * p2 = p1;
+      }
+      """,
+    )
+
+  }
 }
