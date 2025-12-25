@@ -589,4 +589,33 @@ class TypeCheckerTest extends FunSuite {
     )
 
   }
+
+  test("long type tests") {
+    expectTypePass("""
+      int main() {
+        long x;
+      }
+      """)
+
+    expectTypePass("""
+      int main() {
+        long x = 2;
+      }
+      """)
+
+    expectTypePass("""
+      int main() {
+        long long x = 2;
+      }
+      """)
+
+    expectTypeError("""
+      int main() {
+        long long x = 2;
+        long long* p1 = &x;
+        int* p2 = p1;
+      }
+      """, "type long long and type int are not the same.")
+  }
+
 }
