@@ -165,7 +165,7 @@ class Lexer private (
           }
 
           return Right(
-            (makeTokenInfo(tokenToReturn, ind, i + 1), new Lexer(input, i))
+            (makeTokenInfo(tokenToReturn, ind, i + 1), new Lexer(input, i, typeNames))
           )
         case token: Token =>
           currentState = token
@@ -175,11 +175,11 @@ class Lexer private (
       i += 1
 
     if currentState == Empty() then
-      Right(makeTokenInfo(Token.EOF, i, i), new Lexer(input, i))
+      Right(makeTokenInfo(Token.EOF, i, i), new Lexer(input, i, typeNames))
     else
       transition(currentState, ' ') match
         case Accept(token) =>
-          Right(makeTokenInfo(token, ind, i), new Lexer(input, i))
+          Right(makeTokenInfo(token, ind, i), new Lexer(input, i, typeNames))
         case c: CompilerError => Left(c)
         case _                => Left(makeError("Unexpected end of input."))
   }

@@ -22,6 +22,14 @@ class TypeCheckerTest extends FunSuite {
     t
   }
 
+  def expectParseError(input: String) = {
+    val lexer = new Lexer(new File("test.txt", input))
+    val ast = translationUnit.parse(lexer) match {
+      case Left(err)       => {}
+      case Right((ast, _)) => fail("Did not fail parser")
+    }
+  }
+
   def expectTypeError(input: String, expectedContains: String) = {
     val lexer = new Lexer(new File("test.txt", input))
     try {
@@ -577,7 +585,7 @@ class TypeCheckerTest extends FunSuite {
         int * const p1;
         int * p2 = p1;
       }
-      """,
+      """
     )
     expectTypePass(
       """
@@ -585,7 +593,7 @@ class TypeCheckerTest extends FunSuite {
         int * const p1;
         int * p2 = p1;
       }
-      """,
+      """
     )
 
   }
@@ -609,13 +617,16 @@ class TypeCheckerTest extends FunSuite {
       }
       """)
 
-    expectTypeError("""
+    expectTypeError(
+      """
       int main() {
         long long x = 2;
         long long* p1 = &x;
         int* p2 = p1;
       }
-      """, "type long long and type int are not the same.")
+      """,
+      "type long long and type int are not the same."
+    )
   }
 
   test("mixed pointer multiple inits") {
@@ -626,7 +637,7 @@ class TypeCheckerTest extends FunSuite {
         return *p;
       }
       """
-      )
+    )
 
     expectTypeError(
       """
@@ -634,8 +645,9 @@ class TypeCheckerTest extends FunSuite {
         int x = 2, *p;
         p = 3;
       }
-      """, ""
-      )
+      """,
+      ""
+    )
   }
 
   test("typedef tests") {
@@ -647,19 +659,42 @@ class TypeCheckerTest extends FunSuite {
         return x + 2;
       }
       """
-      )
+    )
 
-    // expectTypeError(
-    //   """
-    //   int main() {
-    //     {
-    //         typedef int foo_t;
-    //     }
-    //     foo_t x = 2;
-    //     return x + 2;
-    //   }
-    //   """,""
-    //   )
+    expectTypePass(
+      """
+      int main() {
+        typedef int foo_t;
+        int y;
+        foo_t x = 2;
+        return x + 2;
+      }
+      """
+    )
+
+    expectTypePass(
+      """
+      int main() {
+        typedef int foo_t;
+        int y;
+        {
+          foo_t x = 2;
+          return x + 2;
+        }
+      }
+      """
+    )
+
+    expectParseError(
+      """
+      int main() {
+        {
+          typedef int foo_t;
+        }
+        foo_t a;
+      }
+      """
+      )
   }
 
 }
