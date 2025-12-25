@@ -168,9 +168,11 @@ def directDeclarator: ParseRule[DirectDeclarator] =
     .named("direct declarator")
 
 def blockStatement: ParseRule[AstExt] = (for {
+  lexer <- GetLexer()
   _ <- Just(Token.OpenBrace)
   statements <- statement.many
   _ <- Just(Token.CloseBrace)
+  _ <- SetLexer(lexer)
 } yield Right(AstExtKind.Block(statements))).withSpan
 
 def functionDefinition: ParseRule[AstExt] =

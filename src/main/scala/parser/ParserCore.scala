@@ -68,6 +68,18 @@ case class UpdatedLexer[A](parser: ParseRule[A], f: Out[A] => Lexer) extends Par
   }
 }
 
+case class GetLexer() extends ParseRule[Lexer] {
+  def parse(lexer: Lexer): Either[CompilerError, Out[Lexer]] = {
+    Right((lexer, lexer))
+  }
+}
+
+case class SetLexer(lexerToSetTypeNames: Lexer) extends ParseRule[Unit] {
+  def parse(lexer: Lexer): Either[CompilerError, Out[Unit]] = {
+    Right(((), lexer.withTypeNames(lexerToSetTypeNames.typeNames)))
+  }
+}
+
 case class Map[A, B](parser: ParseRule[A], f: A => Either[CompilerError, B])
     extends ParseRule[B] {
   def parse(lexer: Lexer): Either[CompilerError, Out[B]] =

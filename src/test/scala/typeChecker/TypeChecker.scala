@@ -695,6 +695,17 @@ class TypeCheckerTest extends FunSuite {
       }
       """
       )
+
+    expectParseError(
+      """
+      int foo() {
+        typedef int foo_t;
+      }
+      int main() {
+        foo_t a;
+      }
+      """
+      )
   }
 
 }
