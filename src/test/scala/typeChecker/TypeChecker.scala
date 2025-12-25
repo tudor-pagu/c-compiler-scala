@@ -426,4 +426,15 @@ class TypeCheckerTest extends FunSuite {
 
   }
 
+  test("const assignment") {
+    expectTypePass(
+      """
+      int main() {
+        const int x = 2;
+        return 0;
+      }
+      """
+      )
+  }
+
 }
