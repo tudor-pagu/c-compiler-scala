@@ -14,7 +14,6 @@ import tpagu.compiler.parser.Declaration
 import java.util.IdentityHashMap
 import tpagu.compiler.parser.TypeQualifier
 import tpagu.compiler.parser.TypeSpecifier
-import tpagu.compiler.parser.IntSpec
 
 type TypeEnvironment = Map[String, Type]
 
@@ -73,14 +72,21 @@ class TypeCheck {
               if (ValueCategoryChecker.isLvalue(e, typeMap)) {
                 PtrT(t, t.qualifiers)
               } else {
-                throw createError(s"Tried to get the address of rvalue.",e.span)
+                throw createError(
+                  s"Tried to get the address of rvalue.",
+                  e.span
+                )
               }
 
             case (PrefixOp.Dereference, t) =>
-               t match {
-                 case PtrT(inner, qualifiers) => inner
-                 case _ => throw createError(s"Tried to dereference non pointer type: ${t.toString}", e.span)
-               }
+              t match {
+                case PtrT(inner, qualifiers) => inner
+                case _ =>
+                  throw createError(
+                    s"Tried to dereference non pointer type: ${t.toString}",
+                    e.span
+                  )
+              }
             case (_, t) =>
               throw createError(
                 s"Invalid unary opration on ${t.toString}",
@@ -223,19 +229,64 @@ class TypeCheck {
 
 def getBaseType(declSpecifiers: List[DeclarationSpecifier])(implicit
     span: Span
-): Type =
-  val l = declSpecifiers
+): Type = {
+  val typeSpecifiers = declSpecifiers
     .filter {
-      case ts:TypeSpecifier => true
-      case _             => false
+      case ts: TypeSpecifier => true
+      case _                 => false
     }
-    .map {
-      case IntSpec() => NumT(4)
-      case _             => throw RuntimeException("Unreachable code!")
-    }
-  l.headOption.getOrElse({
+  if (typeSpecifiers.isEmpty) {
     throw createError("No valid type specifier found in declaration.", span);
-  })
+  }
+  // handling of integer types
+  val numInt = typeSpecifiers.count(_ == TypeSpecifier.Int)
+  val numLong = typeSpecifiers.count(_ == TypeSpecifier.Long)
+
+  if (numInt == 0 && numLong == 0) {
+    throw createError("No type specifier indicating an actual type was found.", span);
+  }
+  val numUnsigned = typeSpecifiers.count(_ == TypeSpecifier.Unsigned)
+  val numSigned = typeSpecifiers.count(_ == TypeSpecifier.Signed)
+
+  if (numUnsigned >= 1 && numSigned >= 1) {
+    throw createError("Cannot combine signed specifier with unsigned.", span)
+  }
+
+  if (numSigned > 1) {
+    throw createError("Duplicate signed specifier.", span)
+  }
+
+  if (numUnsigned > 1) {
+    throw createError("Duplicate unsigned specifier.", span)
+  }
+
+  val signed: Boolean = (numUnsigned == 0)
+
+  val isConst = declSpecifiers.count(_ == TypeQualifier.Const) > 0
+  val isVolatile = declSpecifiers.count(_ == TypeQualifier.Volatile) > 0
+  // TODO: Add restrict
+  val typeQualifiers = TypeQualifiers(isConst, isVolatile)
+
+  if (numInt > 0 || numLong > 0) {
+    // it must be a numeric type
+    if (numInt > 1) {
+      throw createError("Cannot specify int more than once.", span)
+    }
+    if (numLong > 2) {
+      throw createError("Cannot specify long more than twice.", span)
+    }
+
+    if (numLong <= 1) {
+      return NumT(4, signed, typeQualifiers)
+    }
+
+    if (numLong == 2) {
+      return NumT(8, signed, typeQualifiers)
+    }
+  }
+
+  throw RuntimeException("Reached end of get getBaseType, which shouldn't happen (we should throw an error early). There must be a bug here.");
+}
 
 def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type =
   getTypeOfDeclaration(
@@ -245,9 +296,9 @@ def getTypeOfDeclaration(declaration: Declaration)(implicit span: Span): Type =
 
 def combineQualifiers(quals: List[TypeQualifier]): TypeQualifiers = {
   TypeQualifiers(
-    isConst = quals.contains(TypeQualifier.Const),
-    //TODO: Add the rest of the qualifiers
-    )
+    isConst = quals.contains(TypeQualifier.Const)
+    // TODO: Add the rest of the qualifiers
+  )
 }
 
 def getTypeOfDeclaration(
@@ -257,10 +308,13 @@ def getTypeOfDeclaration(
   if (!declarator.pointers.isEmpty) {
     // we deal with pointer declarators recursively:
     val quals = declarator.pointers.head.qualifiers
-    val peeledDeclarator = Declarator(declarator.pointers.tail, declarator.direct)
-    return PtrT(getTypeOfDeclaration(declSpecifiers, peeledDeclarator), combineQualifiers(quals))
+    val peeledDeclarator =
+      Declarator(declarator.pointers.tail, declarator.direct)
+    return PtrT(
+      getTypeOfDeclaration(declSpecifiers, peeledDeclarator),
+      combineQualifiers(quals)
+    )
   }
-
 
   val baseType = getBaseType(declSpecifiers)
   declarator.direct match {

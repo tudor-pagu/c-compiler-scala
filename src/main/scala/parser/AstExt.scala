@@ -114,21 +114,29 @@ sealed trait DeclarationSpecifier
 
 sealed trait TypeSpecifier extends DeclarationSpecifier
 
-case class IntSpec() extends TypeSpecifier {
-  override def toString() = "int"
-}
+object TypeSpecifier {
+  case object Int extends TypeSpecifier {
+    override def toString() = "int"
+  }
 
-case class DoubleSpec() extends TypeSpecifier {
-  override def toString() = "double"
-}
-case class LongSpec() extends TypeSpecifier {
-  override def toString() = "long"
-}
-case class ShortSpec() extends TypeSpecifier {
-  override def toString() = "short"
-}
-case class StructSpec() extends TypeSpecifier {
-  override def toString() = "struct"
+  case object Double extends TypeSpecifier {
+    override def toString() = "double"
+  }
+  case object Long extends TypeSpecifier {
+    override def toString() = "long"
+  }
+  case object Short extends TypeSpecifier {
+    override def toString() = "short"
+  }
+  case object Struct extends TypeSpecifier {
+    override def toString() = "struct"
+  }
+  case object Signed extends TypeSpecifier {
+    override def toString() = "signed"
+  }
+  case object Unsigned extends TypeSpecifier {
+    override def toString() = "unsigned"
+  }
 }
 
 sealed trait StorageClassSpecifier extends DeclarationSpecifier
@@ -140,11 +148,11 @@ case class TypedefSpec() extends StorageClassSpecifier {
 sealed trait TypeQualifier extends DeclarationSpecifier
 
 object TypeQualifier {
-  case class Const() extends TypeQualifier {
+  case object Const extends TypeQualifier {
     override def toString(): String = "const"
   }
 
-  case class Volatile() extends TypeQualifier {
+  case object Volatile extends TypeQualifier {
     override def toString(): String = "volatile"
   }
 }

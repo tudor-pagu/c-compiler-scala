@@ -34,8 +34,8 @@ def declarator: ParseRule[Declarator] =
 def typeSpecifier: ParseRule[DeclarationSpecifier] =
   (OneOf(List(Token.Int, Token.Long)).map(tok =>
       tok.token match {
-        case Token.Int => Right(IntSpec())
-        case Token.Long => Right(LongSpec())
+        case Token.Int => Right(TypeSpecifier.Int)
+        case Token.Long => Right(TypeSpecifier.Long)
         case _ => throw RuntimeException("This branch shouldnt be reachable in type specifier. Check the oneOf and the branches you handle match.")
       }
   )).named("type specifier")
@@ -43,7 +43,7 @@ def typeSpecifier: ParseRule[DeclarationSpecifier] =
 def typeQualifier: ParseRule[TypeQualifier] =
   (for {
     _ <- Just(Token.Const)
-  } yield Right(TypeQualifier.Const()))
+  } yield Right(TypeQualifier.Const))
 
 def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
   // this map upcast is needed since typeQualifier returns TypeSpecifier but for the Or parser combinator these must be the exact same type
