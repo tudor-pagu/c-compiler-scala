@@ -475,4 +475,17 @@ class IrInterpreterTest extends FunSuite {
     """, 2147483648L)
   }
 
+  test("interpreter typedef tests") {
+    irInterpHelper(
+      """
+      int main() {
+        typedef long long ll;
+        ll x = 2147483647;
+        x = x + 1;
+        return x;
+      }
+      """,  2147483648L
+      )
+  }
+
 }
