@@ -740,5 +740,20 @@ class TypeCheckerTest extends FunSuite {
       )
   }
 
+  test("bad function pointers") {
+    expectTypeError(
+      """
+      int foo(int x, int y) {
+          return x + y;
+      }
+      int main() {
+        int (*p)(long long, int) = foo;
+        return p(2,3);
+      }
+      """, ""
+      )
+
+  }
+
 
 }

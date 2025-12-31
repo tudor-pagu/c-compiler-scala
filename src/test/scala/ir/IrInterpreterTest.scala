@@ -488,4 +488,76 @@ class IrInterpreterTest extends FunSuite {
       )
   }
 
+  test("void argument list") {
+    irInterpHelper(
+      """
+      int foo(void) {
+        return 42;
+      }
+      int main() {
+        return foo();
+      }
+      """, 42
+    )
+  }
+  test("function pointer test") {
+    irInterpHelper(
+      """
+      int foo() {
+        return 42;
+      }
+      int main() {
+        int (*p)(void) = foo;
+        return p();
+
+      }
+      """, 42)
+  }
+
+  test("function pointer with any args") {
+    irInterpHelper(
+      """
+      int foo() {
+        return 42;
+      }
+      int main() {
+        int (*p)() = foo;
+        return p();
+
+      }
+      """, 42
+      )
+  }
+
+  test("function pointer with args") {
+    irInterpHelper(
+      """
+      int foo(int x, int y) {
+        return x + y;
+      }
+      int main() {
+        int (*p)(int, int) = foo;
+        return p(2,3);
+      }
+      """, 5
+      )
+    
+    // numerical conversion should be allowed here
+    irInterpHelper(
+      """
+      int foo(int x, int y) {
+          return x + y;
+      }
+      int main() {
+        int (*p)(int, int) = foo;
+        int x = 2;
+        long long y = 5;
+        return p(x,y);
+      }
+      """, 7
+      )
+
+  }
+
+
 }
