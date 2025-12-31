@@ -61,10 +61,10 @@ final case class Memory(mem: Vector[Byte], stackLocation:Long) {
   def storeAt(location: Long, value: Long, width: Int): Memory = {
     assert(0 <= location && location + width <= mem.length)
     assert(isValidWidth(width))
-    assert(
-      -(1L << (8 * width - 1)) <= value &&
-        value <= (1L << (8 * width - 1)) - 1
-    )
+    // assert(
+    //   -(1L << (8 * width - 1)) <= value &&
+    //     value <= (1L << (8 * width - 1)) - 1
+    // )
 
     var m = mem
     var off = 0

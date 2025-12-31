@@ -452,7 +452,27 @@ class IrInterpreterTest extends FunSuite {
       """,
       42
     )
+  }
 
+  test("numeric limits test")  {
+    irInterpHelper(
+    """
+    int main() {
+      int x;
+      x = 2147483647;
+      x = x + 1;
+      return x;
+    }
+    """, -2147483648)
+    irInterpHelper(
+    """
+    int main() {
+      long long x;
+      x = 2147483647;
+      x = x + 1;
+      return x;
+    }
+    """, 2147483648L)
   }
 
 }
