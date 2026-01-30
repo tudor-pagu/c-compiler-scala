@@ -31,7 +31,8 @@ def declarator: ParseRule[Declarator] =
   (for {
     ptr <- onePointer.many
     decl <- directDeclarator
-  } yield Right(Declarator(ptr, decl)))
+    suffixes <- declaratorSuffix.many
+  } yield Right(Declarator(ptr, decl, suffixes)))
 
 // needed because Just() won't work with class tokens (not singletons)
 def typedefName: ParseRule[TypeSpecifier.TypedefName] = {
@@ -135,23 +136,23 @@ def extractName(nameOpt: Option[AstExt]): Option[String] = nameOpt.map {
   case _                                   => ???
 }
 
-def functionDeclarator: ParseRule[DirectDeclarator] =
+def parameterSuffix:ParseRule[DeclaratorSuffix] = {
   val emptyParamList = for {
-    name <- identifier.maybe
     _ <- Just(Token.OpenParen)
     _ <- Just(Token.CloseParen)
-  } yield Right(DirectDeclarator.Function(extractName(name), Nil))
+  } yield Right(DeclaratorSuffix.Params(Nil))
 
   val nonEmptyParamList = for {
-    // case AstExt(AstExtKind.Identifier(name),_) <- identifier.maybe
-    name <- identifier.maybe
     _ <- Just(Token.OpenParen)
     params <- listOf(parameterDeclaration)
     _ <- Just(Token.CloseParen)
-  } yield Right(DirectDeclarator.Function(extractName(name), params))
+  } yield Right(DeclaratorSuffix.Params(params))
 
   (emptyParamList <|> nonEmptyParamList)
-    .named("function declarator")
+}
+
+def declaratorSuffix:ParseRule[DeclaratorSuffix] = 
+  (parameterSuffix)
 
 def directDeclarator: ParseRule[DirectDeclarator] =
   val paranthesizedDeclaration = for {
@@ -164,8 +165,11 @@ def directDeclarator: ParseRule[DirectDeclarator] =
     case name <- identifier.maybe
   } yield Right(DirectDeclarator.Variable(extractName(name)))
 
-  (functionDeclarator <|> variableDeclarator <|> paranthesizedDeclaration)
-    .named("direct declarator")
+  //TODO: Is it really correct to let anonymous declarators
+  //like this? this variableDeclarator can always eat up nothing
+  //so this can be sketchy...
+  (paranthesizedDeclaration <|> variableDeclarator )
+
 
 def blockStatement: ParseRule[AstExt] = (for {
   lexer <- GetLexer()
@@ -178,11 +182,11 @@ def blockStatement: ParseRule[AstExt] = (for {
 def functionDefinition: ParseRule[AstExt] =
   (for {
     declSpecs <- declarationSpecifier.repeat(1 until Int.MaxValue)
-    decl <- functionDeclarator
+    decl <- declarator
     body <- blockStatement
   } yield Right(
     AstExtKind
-      .FunctionDefinition(Declaration(declSpecs, Declarator(Nil, decl)), body)
+      .FunctionDefinition(Declaration(declSpecs,decl), body)
   )).withSpan
     .named("function definition")
 

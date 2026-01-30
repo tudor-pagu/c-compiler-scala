@@ -7,14 +7,18 @@ import java.nio.file.StandardOpenOption
 
 object GoldCopyErrors {
   val path = Paths.get(s"src/test/goldcopies/gc-errors")
+  val path_files = Paths.get(s"src/test/goldcopies/gc-errors-files")
   
   def init() = {
       Files.deleteIfExists(path)
+      Files.deleteIfExists(path_files)
       Files.createFile(path)
+      Files.createFile(path_files)
   }
 
-  def addError(fullName:String) = {
-    Files.writeString(path, s"${fullName}\n", StandardOpenOption.APPEND)
+  def addError(fullName:String, old:String, newVal: String) = {
+    Files.writeString(path, s"${fullName}\nold:${old}\nnew:${newVal}\n---------------------------\n\n", StandardOpenOption.APPEND)
+    Files.writeString(path_files, s"${fullName}\n", StandardOpenOption.APPEND)
   }
 
   init()
@@ -32,7 +36,7 @@ trait GoldCopyFunSuite extends BaseFunSuite {
       if (Files.exists(path)) {
         val content = Files.readString(path);
         if (result != content) {
-          GoldCopyErrors.addError(filename)
+          GoldCopyErrors.addError(filename,content, result)
         }
         assertEquals(result, content);
       } else {

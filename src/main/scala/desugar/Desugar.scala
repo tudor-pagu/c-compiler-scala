@@ -12,6 +12,7 @@ import tpagu.compiler.typeChecker.getTypeOfDeclaration
 import tpagu.compiler.Span
 import tpagu.compiler.parser.AstExtKind.ExprStatement
 import tpagu.compiler.parser.Declarator
+import tpagu.compiler.parser.DeclaratorSuffix
 
 object Desugar {
   // the typeMap is produced by the TypeChecker as it type checks a program.
@@ -53,9 +54,13 @@ object Desugar {
         }
       ))
       case AstExtKind.FunctionDefinition(declaration, body) => {
-        declaration.declarator.direct match {
-          case tpagu.compiler.parser.DirectDeclarator.Function(name, params) => {
-            FunctionDefinition(name.get, params.map(param => param.declarator.direct.getName().get), desugar(body), typeMap.get(e))
+        declaration.declarator.suffixes match {
+          case List(DeclaratorSuffix.Params(params)) => {
+            val name = declaration.declarator.getName() match {
+              case Some(name_) => name_
+              case _ => "You tried to desugar an anonymous top level function definition, which is not allowed. This should have been caught by the type checker already!"
+            }
+            FunctionDefinition(name, params.map(param => param.declarator.direct.getName().get), desugar(body), typeMap.get(e))
           }
           case _ => throw RuntimeException("Didnt get function definition in desugarer when it was expected.")
         }

@@ -1,1 +1,1 @@
-Declaration((int),[Func(Some(a), [int Var(Some(b)), int Var(Some(c))])])
+Declaration((int),[Func(Some(a)) [int Var(Some(b)), int Var(Some(c))]])

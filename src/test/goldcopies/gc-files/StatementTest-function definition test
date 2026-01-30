@@ -1,1 +1,1 @@
-FuncDef(int Func(Some(a), [int Var(Some(b))]), Block({ Declaration((int),[Var(Some(c))]) }))
+FuncDef(int Func(Some(a)) [int Var(Some(b))], Block({ Declaration((int),[Var(Some(c))]) }))

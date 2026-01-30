@@ -6,5 +6,5 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 (
 cd $SCRIPT_DIR
-cat ./gc-errors  | xargs -o -I {} rm -i ./gc-files/{}
+cat ./gc-errors-files  | xargs -o -I {} rm -i ./gc-files/{}
 )

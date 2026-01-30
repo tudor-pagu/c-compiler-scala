@@ -73,24 +73,24 @@ enum AstExtKind:
     case AstExtKind.Assignment(left, right) => s"Assignment($left, $right)"
   }
 
+enum DeclaratorSuffix {
+  case Params(params: List[Declaration])
+  case Array(length: Int)
+}
+
 enum DirectDeclarator:
   case Variable(
       name: Option[String]
   ) // declarator can be absent in abstract declarators (e.g. "int" by itself)
-  case Function(name: Option[String], params: List[Declaration])
   case InnerDeclarator(decl: Declarator)
 
   def getName(): Option[String] = this match {
-    case Variable(name)         => name
-    case Function(name, params) => name
-    case InnerDeclarator(decl)  => decl.direct.getName()
+    case Variable(name)        => name
+    case InnerDeclarator(decl) => decl.direct.getName()
   }
 
   override def toString: String = this match {
-    case DirectDeclarator.Variable(name) => s"Var($name)"
-    case DirectDeclarator.Function(name, params) =>
-      val paramStrings = params.map(_.toString).mkString(", ")
-      s"Func($name, [$paramStrings])"
+    case DirectDeclarator.Variable(name)        => s"Var($name)"
     case DirectDeclarator.InnerDeclarator(decl) => s"(${decl.toString})"
   }
 
@@ -103,11 +103,24 @@ case class Pointer(qualifiers: List[TypeQualifier]) {
   }
 }
 
-case class Declarator(pointers: List[Pointer], direct: DirectDeclarator) {
+case class Declarator(
+    pointers: List[Pointer],
+    direct: DirectDeclarator,
+    suffixes: List[DeclaratorSuffix]
+) {
   override def toString: String = {
     val ptrs = pointers.map(_.toString).mkString("")
-    s"$ptrs${direct.toString}"
+    val suffixesString = if suffixes.isEmpty then "" else suffixes.toString
+    suffixes match {
+      case List(DeclaratorSuffix.Params(params)) => {
+        s"${ptrs}Func(${direct.getName()}) [${params.mkString(", ")}]"
+      }
+      case _ => s"$ptrs${direct.toString}${suffixesString}"
+
+    }
   }
+
+  def getName(): Option[String] = direct.getName()
 }
 
 sealed trait DeclarationSpecifier

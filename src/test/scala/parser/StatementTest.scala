@@ -115,19 +115,19 @@ class StatementTest extends GoldCopyFunSuite {
     testParseRule("const int a = 42;", statement)
   }
 
-  goldcopyTest("function pointer declaration") {
+  goldcopyTest("function pointer declaration 1") {
     testParseRule("int (*p)(int, int) = foo;", statement)
   }
 
-  goldcopyTest("function pointer declaration") {
+  goldcopyTest("function pointer declaration 2") {
     testParseRule("int (*p)(void) = foo;", statement)
   }
 
-  goldcopyTest("function pointer declaration") {
+  goldcopyTest("function pointer declaration 3") {
     testParseRule("int (*p)() = foo;", statement)
   }
 
-  goldcopyTest("function pointer declaration") {
+  goldcopyTest("function pointer declaration 4") {
     testParseRule("int (*p)(int, long long);", statement)
   }
 }

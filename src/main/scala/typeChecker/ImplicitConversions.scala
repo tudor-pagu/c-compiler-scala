@@ -44,6 +44,10 @@ def isQualifierConvertible(from: Type, to: Type): Either[String, Unit] = {
   }
 }
 
+def decayFunctionToPtr(t: FunT):Type = {
+  PtrT(t)
+}
+
 def isAssignmentSafe(left: Type, right: Type): Either[String, Unit] = {
   (Type.dropQualifiers(left), Type.dropQualifiers(right)) match {
     case (NumT(wFrom, sFrom, qualsFrom), NumT(wTo, sTo, qualsTo)) => {
@@ -53,6 +57,14 @@ def isAssignmentSafe(left: Type, right: Type): Either[String, Unit] = {
     }
     case (PtrT(innerLeft, qualsFrom), PtrT(innerRight, qualsTo)) => {
       return isQualifierConvertible(innerRight, innerLeft)
+    }
+    //TODO: Decaying and conversions will probably need to be reworked once I have more cases and more complexity
+    case (l:PtrT, r:FunT) => {
+      return isAssignmentSafe(l, decayFunctionToPtr(r))
+    }
+    case _ if (left == right) => {
+      // same type can be converted to itself, obviously
+      Right(())
     }
     case _ => Left(s"Could not implicitly convert from ${right} to ${left}")
   }
