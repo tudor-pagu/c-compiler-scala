@@ -529,6 +529,20 @@ class IrInterpreterTest extends FunSuite {
       )
   }
 
+  test("function pointer with typedef") {
+    irInterpHelper(
+      """
+      typedef long long ll;
+      int foo(ll x, int y) {
+          return x + y;
+      }
+      int main() {
+          int (*p)(ll, int) = foo;
+          return p(2,3);
+      }
+      """, 5
+      )
+  }
   test("function pointer with args") {
     irInterpHelper(
       """

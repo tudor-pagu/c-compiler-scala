@@ -205,7 +205,6 @@ class IrInterpreter {
       return List()
     }
 
-    println(program(0))
     program(0) match {
       case Fun(_, _, _) => {}
       case _ => {
