@@ -4,7 +4,9 @@ class File(val name: String, val contents: String)
 
 class Span(val start: Int, val end: Int, val file: File)
 
-case class Spanned[A](node: A, span: Span) {
+type AstID = Int
+// id is used to add metadata to the tree
+case class Spanned[A](node: A, span: Span, id:AstID) {
   override def toString(): String = node.toString
 }
 
@@ -18,6 +20,15 @@ object Span {
       Span(Math.min(a.start, b.start), Math.max(a.end, b.end), a.file)
     }
   }
+}
+
+object Spanned {
+    private var counter: AstID = 0
+    def apply[A](node: A, span: Span): Spanned[A] = {
+      counter += 1
+      new Spanned(node, span, counter)
+    }
+    def unapply[A](s: Spanned[A]): Some[(A, Span)] = Some((s.node, s.span))
 }
 
 enum ErrorKind {
