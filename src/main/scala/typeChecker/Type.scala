@@ -5,7 +5,7 @@ package tpagu.compiler.typeChecker
 
 // A type may be created from a user provided type, so we may want to keep a reference to it for diagnostics.
 sealed trait Type {
-  def size(): Long // all types need to know their size
+  def size(): Int // all types need to know their size
   def alignment(): Long // all types need to know their alignment requirement
   def qualifiers: TypeQualifiers
 
@@ -35,18 +35,18 @@ case class TypeQualifiers(
   isRestrict: Boolean = false
 )
 
-case class NumT(width: Long, signed: Boolean = true, qualifiers: TypeQualifiers = TypeQualifiers()) extends Type {
-  override def size(): Long = width
+case class NumT(width: Int, signed: Boolean = true, qualifiers: TypeQualifiers = TypeQualifiers()) extends Type {
+  override def size(): Int = width
   override def alignment(): Long = width
 }
 
 case class PtrT(innerT: Type, qualifiers: TypeQualifiers = TypeQualifiers()) extends Type {
-  override def size(): Long = 8 // just hard coding 8 bytes as the size
+  override def size(): Int = 8 // just hard coding 8 bytes as the size
   override def alignment(): Long = 8
 }
 
 case class FunT(returnType: Type, paramTypes: List[Type]) extends Type {
-  override def size(): Long = {
+  override def size(): Int = {
     throw RuntimeException("Tried to take size of a function type. This should not be allowed by the type checker.")
   }
   override def alignment(): Long = {
@@ -55,7 +55,7 @@ case class FunT(returnType: Type, paramTypes: List[Type]) extends Type {
   override def qualifiers: TypeQualifiers = TypeQualifiers(isConst = true)
 }
 case class NoneT() extends Type { // Just used for statements, things which shouldn't have types\
-  override def size(): Long = {
+  override def size(): Int = {
     throw RuntimeException("Tried to take size of a NoneT type. This should not be allowed by the type checker.")
   }
   override def alignment(): Long = {
@@ -68,7 +68,7 @@ case class NoneT() extends Type { // Just used for statements, things which shou
 
 object Type {
   val ptrSize = 8
-  val defaultIntSize: Long = 4
+  val defaultIntSize: Int = 4
   def numericalPromotion(t: NumT): Type = 
     if t.width < defaultIntSize then NumT(defaultIntSize , t.signed) else t
 

@@ -245,7 +245,7 @@ object IRGenerator {
         for {
           lop <- produceExpression(e)
           reg <- getNewRegister()
-          _ <- IRMonad.emit(IR.Load(lop, reg))
+          _ <- IRMonad.emit(IR.Load(lop, reg, width=t.size()))
         } yield reg
       }
 
@@ -267,9 +267,23 @@ object IRGenerator {
               _ <- IRMonad.emit(IR.Call(Label(name), computedArgs, reg))
             } yield (reg)
           }
+          case (Identifier(name, idt), PtrT(innerT:FunT, qualifiers)) => {
+            for {
+              addrExpr <- produceExpression(callee)
+              addr <- getNewRegister()
+              _ <- IRMonad.emit(IR.Load(addrExpr, addr, width=idt.size()))
+              computedArgs <- IRMonad.sequence(
+                args.map(arg => produceExpression(arg))
+                )
+              retReg <- getNewRegister()
+              _ <- IRMonad.emit(IR.Call(addr, computedArgs, retReg))
+
+            } yield(retReg)
+          }
+
           case _ =>
             throw RuntimeException(
-              "Tried to call function pointer. Not supported yet. TODO!"
+              "Tried to call non callable!"
             )
         }
       }
