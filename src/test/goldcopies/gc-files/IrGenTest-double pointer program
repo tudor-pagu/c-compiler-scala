@@ -15,3 +15,4 @@ store r10 => [r7]
 store $42 => [r3]
 load [r3] => r11
 return r11
+return $0

@@ -7,3 +7,4 @@ r4 <= r3 + $1
 store r4 => [r2]
 load [r2] => r5
 return r5
+return $0

@@ -3,9 +3,6 @@ package tpagu.compiler.ir
 import tpagu.compiler.typeChecker.Type
 
 
-
-type Program = List[Instruction]
-
 sealed trait Instruction
 
 sealed trait Operand
@@ -25,6 +22,9 @@ case class Register(id: Long) extends Operand {
 case class Immediate(value: Long) extends Operand {
   override def toString(): String = s"$$$value"
 }
+// A label may be assigned to a register. It is like the label can be encoded
+// as a particular unique 64 bit integer (in assembly it would be the real)
+// address of the label.
 case class Label(id: String) extends Operand { // note: labels are unique
   override def toString(): String = s"${id}"
 }
@@ -54,7 +54,7 @@ object IR {
   // Functions: To simplify writing IR, we provide the function abstraction.
   // Rresult <= f(args...)
   // f must be a label that was previously defined as a functoin taking exactly len(args) arguments
-  case class Call(f: Label, args: List[Operand], result: Register) extends Instruction {
+  case class Call(f: Operand, args: List[Operand], result: Register) extends Instruction {
     override def toString: String =
       s"$result <= $f(${args.mkString(", ")})"
   }
@@ -62,6 +62,10 @@ object IR {
   // define label to be a function taking a list of parameters in some specific registers.
   // static option needs to be in the IR, like for all top level declarations, to tell the Assembly gen
   // if it should emit a symbol here or not.
+  //
+  // The semantics of a function/call is that it is a label with a list of parameter registers, such that
+  // the caller will provide a list of registers of equivalent length, and they are automatically "copied"
+  // into the new registers
   case class Fun(label: Label, params: List[Register], static:Boolean = false) extends Instruction {
     override def toString: String =
       s"$label(${params.mkString(", ")}):"
@@ -72,7 +76,7 @@ object IR {
   case class Return(v: Operand) extends Instruction {
     override def toString(): String = s"return $v"
   }
-
+  
   // Memory
   // store v => [loc]
   // meaning you store the value v inside the place in memory pointed to by loc.
@@ -88,6 +92,10 @@ object IR {
   // result <= alloc(size, alignment)
   case class Alloc(result:Register, size: Long, alignment: Long) extends Instruction {
     override def toString(): String = s"$result <= alloc($size, $alignment)"
+  }
+
+  case class Jump(location:Operand) extends Instruction {
+    override def toString(): String = s"jump $location"
   }
 
 

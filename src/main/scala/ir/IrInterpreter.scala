@@ -1,5 +1,6 @@
 package tpagu.compiler.ir
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import IR.LabelDecl
 import tpagu.compiler.ir.IR.Fun
@@ -12,6 +13,7 @@ import tpagu.compiler.ir.IR.Call
 import tpagu.compiler.ir.IR.Store
 import tpagu.compiler.ir.IR.Load
 import tpagu.compiler.ir.IR.Alloc
+import scala.annotation.tailrec
 
 /** We include an IR interpreter for two reasons:
   *   1. It is useful for tests 2. It is useful for optimizations like constant
@@ -21,10 +23,8 @@ type DebugValues = List[Long]
 
 val MAX_MEMORY_SIZE = 10000
 
-private class IrFunction(val name: String, val decl: Fun, val body: Program)
-
 // we don't reuse stack slots for our interpreter.. this is technically fine and just easier to implement
-final case class Memory(mem: Vector[Byte], stackLocation:Long) {
+final case class Memory(mem: Array[Byte], var stackLocation: Long) {
 
   private def nthByte(value: Long, n: Int): Byte =
     ((value >>> (8 * n)) & 0xffL).toByte
@@ -53,33 +53,27 @@ final case class Memory(mem: Vector[Byte], stackLocation:Long) {
     }
   }
 
-  def getStackSlot(size: Long): (Long, Memory) = {
+  def getStackSlot(size: Long): Long = {
     val slot = this.stackLocation
-    (slot, Memory(mem, stackLocation + size))
+    this.stackLocation += size
+    slot
   }
 
-  def storeAt(location: Long, value: Long, width: Int): Memory = {
+  def storeAt(location: Long, value: Long, width: Int): Unit = {
     assert(0 <= location && location + width <= mem.length)
     assert(isValidWidth(width))
-    // assert(
-    //   -(1L << (8 * width - 1)) <= value &&
-    //     value <= (1L << (8 * width - 1)) - 1
-    // )
 
-    var m = mem
     var off = 0
     while (off < width) {
-      m = m.updated((location + off).toInt, nthByte(value, off))
+      mem((location + off).toInt) = nthByte(value, off)
       off += 1
     }
-
-    copy(mem = m)
   }
 }
 
 object Memory {
   def zeroed(size: Int): Memory =
-    Memory(Vector.fill(size)(0.toByte), 0L)
+    Memory(Array.fill(size)(0.toByte), 0L)
 }
 
 class IrInterpreter {
@@ -89,16 +83,23 @@ class IrInterpreter {
   // inside a register. We also yield the exit code of the main
   // function. In my IR, all functions must return exactly on register
   // sized value. If no value is explicitly returned, 0 is implicitly returned.
-  def interp(program: Program): (Long) = {
-    val functions = splitProgramIntoFunctions(program)
-    val mainFunction = functions.find(_.name == "main")
-    val memory = Memory.zeroed(MAX_MEMORY_SIZE)
-    implicit val funs = functions
+  def interp(program: List[Instruction]): (Long) = {
+    implicit val prog: Array[Instruction] = program.toArray
+    implicit val memory = Memory.zeroed(MAX_MEMORY_SIZE)
+    // state of registers
+    implicit val regs: mutable.Map[Long, Long] = mutable.Map()
 
-    mainFunction match {
-      case Some(main) => {
-        this.interpFunction(main, List(), Map(), memory)._1
+    implicit val labelMap: Map[Label, Int] = createLabelMap()
+
+    // None => you are top level function, when you return you stop execution.
+    // Some(x) => returning from this function means a jump to address x.
+    implicit val returnAddresses: mutable.Stack[Int] = mutable.Stack()
+
+    labelMap.get(Label("main")) match {
+      case Some(entry) => {
+        this.interpInstr(entry + 1)
       }
+
       case None => {
         throw new RuntimeException(
           "Tried to interpret iR with no main function. Can't interpret a translation unit with no entry point."
@@ -107,138 +108,106 @@ class IrInterpreter {
     }
   }
 
-  // interpret executing this function, given some arguments (which are all 64 bit register values),
-  // and yield the return value of the function, as well as any executed debug stataments.
-  def interpFunction(
-      f: IrFunction,
-      args: List[Long],
-      registersState: Map[Long, Long],
-      memory: Memory,
-  )(implicit funs: List[IrFunction]): (Long, Memory) = {
-    def helper(
-        ops: Program,
-        regs: Map[Long, Long],
-        mem: Memory
-    ): (Long, Memory) = {
-      // if no return is present, return 0 implicitly at the interpreter level
-      if (ops.isEmpty) {
-        return (0, mem)
-      }
-
-      ops.head match {
-        case Return(v) => (opValue(v, regs), mem)
-        case _ => {
-          val exec = this.interpInstr(ops.head, regs, mem)
-          helper(ops.tail, exec._1, exec._2)
-        }
-      }
-    }
-    val newRegisters = registersState ++ f.decl.params.map(_.id).zip(args)
-    helper(f.body, newRegisters, memory)
-  }
+  def createLabelMap()(implicit program: Array[Instruction]): Map[Label, Int] =
+    program.zipWithIndex.collect {
+      case (LabelDecl(label), idx) => label -> idx
+      case (Fun(label, _, _), idx) => label -> idx
+    }.toMap
 
   // operand to value
-  def opValue(op: Operand, regs: Map[Long, Long]) = op match {
+  def opValue(op: Operand)(implicit regs: mutable.Map[Long, Long]) = op match {
     case Immediate(value) => value
     case Label(_)         => throw RuntimeException("Cannot get value of label")
     case Register(id)     => regs.get(id).get
   }
 
   // instruction will never be return, that is handled separately
-  def interpInstr(i: Instruction, regs: Map[Long, Long], mem: Memory)(implicit
-      funs: List[IrFunction]
-  ): (Map[Long, Long], Memory) = {
-    i match {
+  @tailrec
+  final def interpInstr(line: Int)(implicit
+      memory: Memory,
+      regs: mutable.Map[Long, Long],
+      program: Array[Instruction],
+      labelMap: Map[Label, Int],
+      returnAddresses: mutable.Stack[Int]
+  ): Long = {
+    val instr = program(line)
+    instr match {
       case Add(l, r, result) =>
-        (regs.updated(result.id, opValue(l, regs) + opValue(r, regs)), mem)
+        regs(result.id) = opValue(l) + opValue(r)
       case Mult(l, r, result) =>
-        (regs.updated(result.id, opValue(l, regs) * opValue(r, regs)), mem)
-      case Neg(v, result)   => (regs.updated(result.id, -opValue(v, regs)), mem)
-      case Mov(src, dst)    => (regs.updated(dst.id, opValue(src, regs)), mem)
-      case LabelDecl(label) => (regs, mem)
-      case Call(f, args, result) => {
-        val fun = funs.find(_.name == f.id).get
-        val x =
-          interpFunction(fun, args.map(op => opValue(op, regs)), regs, mem)
-        (regs.updated(result.id, x._1), x._2)
+        regs(result.id) = opValue(l) * opValue(r)
+      case Neg(v, result)   => regs(result.id) = -opValue(v)
+      case Mov(src, dst)    => regs(dst.id) = opValue(src)
+      case LabelDecl(label) => {}
+      case Call(f: Label, args, result) => {
+        val nextLine = labelMap(f)
+        returnAddresses.push(line)
+        val functionDefinition = program(nextLine)
+        functionDefinition match {
+          case Fun(label, params, static) => {
+            for ((r, arg) <- params.zip(args)) {
+              regs(r.id) = opValue(arg)
+            }
+          }
+          case _ => {
+            throw RuntimeException("IR interperter error: called to instruction that is not function")
+          }
+        }
+        return interpInstr(nextLine + 1)
       }
       case Fun(label: Label, params: List[Register], static) => {
         throw RuntimeException("Not expecting Fun instruction here")
       }
       case Return(v) => {
+        if (returnAddresses.isEmpty) {
+          return opValue(v)
+        }
+
+        val retLine = returnAddresses.pop()
+        val callInstr = program(retLine)
+        callInstr match {
+          case Call(f, args, result) => {
+            regs(result.id) = opValue(v)
+            return interpInstr(retLine + 1)
+          }
+          case _ => {
+            throw RuntimeException(
+              "IR interpreting error: Return does not lead to call instruction."
+            )
+          }
+
+        }
         throw RuntimeException("Not expecting return here")
       }
       case Store(v, loc, displacement, index, scale, width) => {
-        val location = opValue(loc, regs)
+        val location = opValue(loc)
         val indexValue = index match {
           case None      => 1
           case Some(ind) => regs.get(ind.id).get
         }
-        val newMem = mem.storeAt(
+        memory.storeAt(
           location + displacement + indexValue * scale,
-          opValue(v, regs),
+          opValue(v),
           width
         )
-        (regs, newMem)
       }
 
       case Load(loc, dst, displacement, index, scale, width) => {
-        val location = opValue(loc, regs)
+        val location = opValue(loc)
         val indexValue = index match {
           case None      => 1
           case Some(ind) => regs.get(ind.id).get
         }
         val value =
-          mem.loadAt(location + displacement + indexValue * scale, width)
-        (regs.updated(dst.id, value), mem)
+          memory.loadAt(location + displacement + indexValue * scale, width)
+        regs(dst.id) = value
       }
 
       case Alloc(result, size, alignment) => {
-        val (addr, newMem) = mem.getStackSlot(size)
-        (regs.updated(result.id, addr), newMem)
+        val addr = memory.getStackSlot(size)
+        regs(result.id) = addr
       }
     }
+    return interpInstr(line + 1)
   }
-
-  def splitProgramIntoFunctions(program: Program): List[IrFunction] = {
-    if (program.length == 0) {
-      return List()
-    }
-
-    program(0) match {
-      case Fun(_, _, _) => {}
-      case _ => {
-        throw RuntimeException(
-          "First statement of program must be label in IR."
-        )
-      }
-    }
-
-    // will be overriden for sure
-    var currentFunction: Option[IrFunction] = None
-    val listBuffer: ListBuffer[IrFunction] = ListBuffer()
-
-    program.foreach((instr) => {
-      instr match {
-        case decl @ Fun(label, _, _) => {
-          if (currentFunction.isDefined) {
-            listBuffer += currentFunction.get
-          }
-          currentFunction = Some(IrFunction(label.id, decl, List()))
-        }
-        case _ => {
-          currentFunction = Some(
-            IrFunction(
-              currentFunction.get.name,
-              currentFunction.get.decl,
-              currentFunction.get.body.appended(instr)
-            )
-          )
-        }
-      }
-    })
-    listBuffer += currentFunction.get
-    listBuffer.toList
-  }
-
 }

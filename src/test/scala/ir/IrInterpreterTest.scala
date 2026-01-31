@@ -31,19 +31,19 @@ class IrInterpreterTest extends FunSuite {
 
   test("memory test 1") {
     var mem = Memory.zeroed(256)
-    mem = mem.storeAt(0, 10, 8)
+    mem.storeAt(0, 10, 8)
     assertEquals(mem.loadAt(0, 8), 10L)
   }
 
   test("memory test 2") {
     var mem = Memory.zeroed(256)
-    mem = mem.storeAt(0, 127, 1)
+    mem.storeAt(0, 127, 1)
     assertEquals(mem.loadAt(0, 8), 127L)
   }
 
   test("memory test 3") {
     var mem = Memory.zeroed(256)
-    mem = mem.storeAt(0, -128, 1)
+    mem.storeAt(0, -128, 1)
     // we expect this to write
     // | 1000 000 | 0x00 | 0x00
     // to memory
@@ -55,7 +55,7 @@ class IrInterpreterTest extends FunSuite {
 
   test("memory test 4") {
     var mem = Memory.zeroed(256)
-    mem = mem.storeAt(0, -1, 1)
+    mem.storeAt(0, -1, 1)
     // we expect this to write
     // | 0xFF | 0x00 | 0x00
     // to memory
@@ -67,7 +67,7 @@ class IrInterpreterTest extends FunSuite {
 
   test("memory test 5") {
     var mem = Memory.zeroed(256)
-    mem = mem.storeAt(0, -1, 2)
+    mem.storeAt(0, -1, 2)
     assertEquals(mem.loadAt(0, 1), -1L)
   }
 

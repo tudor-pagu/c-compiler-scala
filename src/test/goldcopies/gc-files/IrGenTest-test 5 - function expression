@@ -7,6 +7,7 @@ load [r3] => r5
 load [r4] => r6
 r7 <= r5 + r6
 return r7
+return $0
 main():
 r8 <= alloc(4, 4)
 store $2 => [r8]
@@ -19,3 +20,4 @@ r13 <= foo(r11, r12)
 store r13 => [r10]
 load [r10] => r14
 return r14
+return $0

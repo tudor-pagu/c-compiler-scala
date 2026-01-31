@@ -12,3 +12,4 @@ r8 <= -$2
 r9 <= r7 + r8
 r10 <= r9 + $5
 return r10
+return $0

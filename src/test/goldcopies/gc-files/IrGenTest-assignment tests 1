@@ -6,3 +6,4 @@ load [r2] => r3
 store r3 => [r1]
 load [r1] => r4
 return r4
+return $0

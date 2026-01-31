@@ -373,6 +373,10 @@ object IRGenerator {
           _ <- IRMonad.emit(addedOps)
           execBody <- lower(body)
 
+          // final unchanging return -> useful for fall through
+          // or void functions or no return mains.
+          _ <- IRMonad.emit(tpagu.compiler.ir.IR.Return(Immediate(0)))
+
           // restore variable map. See comment at the top of this for.
           _ <- IRMonad.restoreVariableMap(vMap)
         } yield ()
