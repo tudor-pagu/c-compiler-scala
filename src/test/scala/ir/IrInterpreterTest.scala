@@ -20,8 +20,8 @@ class IrInterpreterTest extends FunSuite {
       case Right((ast, _)) => ast
     }
     val typeChecker = TypeCheck()
-    implicit val typeMap:TypeMap =  CombinedTypeCheck.check(ast)
-    
+    implicit val typeMap: TypeMap = CombinedTypeCheck.check(ast)
+
     val coreAst = Desugar.desugar(ast)
     val program = IRGenerator.pub_lower(coreAst)
     val interpreter = IrInterpreter()
@@ -454,25 +454,29 @@ class IrInterpreterTest extends FunSuite {
     )
   }
 
-  test("numeric limits test")  {
+  test("numeric limits test") {
     irInterpHelper(
-    """
+      """
     int main() {
       int x;
       x = 2147483647;
       x = x + 1;
       return x;
     }
-    """, -2147483648)
+    """,
+      -2147483648
+    )
     irInterpHelper(
-    """
+      """
     int main() {
       long long x;
       x = 2147483647;
       x = x + 1;
       return x;
     }
-    """, 2147483648L)
+    """,
+      2147483648L
+    )
   }
 
   test("interpreter typedef tests") {
@@ -484,8 +488,9 @@ class IrInterpreterTest extends FunSuite {
         x = x + 1;
         return x;
       }
-      """,  2147483648L
-      )
+      """,
+      2147483648L
+    )
   }
 
   // TODO: implement this
@@ -528,8 +533,9 @@ class IrInterpreterTest extends FunSuite {
         return p();
 
       }
-      """, 42
-      )
+      """,
+      42
+    )
   }
 
   test("function pointer with typedef") {
@@ -544,8 +550,9 @@ class IrInterpreterTest extends FunSuite {
           ll x = 2;
           return p(x,3);
       }
-      """, 5
-      )
+      """,
+      5
+    )
   }
   test("function pointer with args") {
     irInterpHelper(
@@ -557,9 +564,96 @@ class IrInterpreterTest extends FunSuite {
         int (*p)(int, int) = foo;
         return p(2,3);
       }
-      """, 5
+      """,
+      5
+    )
+
+    test("function pointer - reassignment") {
+      irInterpHelper(
+        """
+    int f() { return 1; }
+    int g() { return 2; }
+    int main() {
+      int (*p)() = f;
+      p = g;
+      return p();
+    }
+    """,
+        2
       )
-    
+    }
+
+    test("function pointer - passed as argument") {
+      irInterpHelper(
+        """
+    int apply(int (*f)(int), int x) {
+      return f(x);
+    }
+    int inc(int x) { return x + 1; }
+    int main() {
+      return apply(inc, 5);
+    }
+    """,
+        6
+      )
+    }
+
+    test("function pointer - returned from function") {
+      irInterpHelper(
+        """
+    int add(int x, int y) { return x + y; }
+    int (*getfn())(int, int) { return add; }
+    int main() {
+      int (*p)(int, int) = getfn();
+      return p(3, 4);
+    }
+    """,
+        7
+      )
+    }
+
+    test("function pointer - double pointer") {
+      irInterpHelper(
+        """
+    int f() { return 42; }
+    int main() {
+      int (*p)() = f;
+      int (**pp)() = &p;
+      return (*pp)();
+    }
+    """,
+        42
+      )
+    }
+
+    test("function pointer - call through dereference") {
+      irInterpHelper(
+        """
+    int f() { return 10; }
+    int main() {
+      int (*p)() = f;
+      return (*p)();
+    }
+    """,
+        10
+      )
+    }
+
+    test("function pointer - nested calls") {
+      irInterpHelper(
+        """
+    int f(int x) { return x * 2; }
+    int g(int x) { return x + 1; }
+    int main() {
+      int (*pf)(int) = f;
+      int (*pg)(int) = g;
+      return pf(pg(3));
+    }
+    """,
+        8
+      )
+    }
+
     // numerical conversion should be allowed here
     // TODO:
     // irInterpHelper(
@@ -577,6 +671,5 @@ class IrInterpreterTest extends FunSuite {
     //   )
 
   }
-
 
 }
