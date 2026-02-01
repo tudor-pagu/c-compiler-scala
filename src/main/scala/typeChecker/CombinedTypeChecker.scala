@@ -13,14 +13,14 @@ import tpagu.compiler.CompilerError
 import tpagu.compiler.Span
 
 object CombinedTypeCheck {
-  def check(e: AstExt): Map[AstID, Type] = {
-    val typeMap = Map[AstID, Type]()
+  def check(e: AstExt): TypeMap = {
+    val typeMap = TypeMap()
 
     val passes = List(
       IdLookupPass(),
       LiteralPass(),
       ArithmeticPass(),
-      CallPass()
+      AssignmentPass()
     )
 
     passes.foldLeft(typeMap)((acc, pass) => pass.check(e, acc))

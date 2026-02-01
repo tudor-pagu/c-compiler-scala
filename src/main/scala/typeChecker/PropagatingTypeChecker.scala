@@ -17,33 +17,33 @@ abstract class PropagatingTypeChecker[Context] extends TypeCheckerPass {
   protected def initializeContext: Context
   protected def updateContext(
       context: Context,
-      typeMap: Map[AstID, Type],
+      typeMap: TypeMap,
       node: AstExt
   ): Context = context
 
   protected def updateContextForChildren(
       context: Context,
-      typeMap: Map[AstID, Type],
+      typeMap: TypeMap,
       node: AstExt
   ): Context = context
 
   protected def updateTypeMap(
       context: Context,
-      typeMap: Map[AstID, Type],
+      typeMap: TypeMap,
       node: AstExt
-  ): Map[AstID, Type] = typeMap
+  ): TypeMap = typeMap
 
   private def processNode(
       context: Context,
-      typeMap: Map[AstID, Type],
+      typeMap: TypeMap,
       node: AstExt
-  ): (Context, Map[AstID, Type]) = {
+  ): (Context, TypeMap) = {
     val newContext = updateContext(context, typeMap, node)
     val newTypeMap = updateTypeMap(context, typeMap, node)
     (newContext, newTypeMap)
   }
 
-  override def check(e: AstExt, typeMap: Map[AstID, Type]): Map[AstID, Type] = {
+  override def check(e: AstExt, typeMap: TypeMap): TypeMap = {
     val ctx = initializeContext
     checkRec(ctx, typeMap, e)._2
   }
@@ -51,9 +51,9 @@ abstract class PropagatingTypeChecker[Context] extends TypeCheckerPass {
   // check recursively
   private def checkRec(
       context: Context,
-      typeMap: Map[AstID, Type],
+      typeMap: TypeMap,
       e: AstExt
-  ): (Context, Map[AstID, Type]) = {
+  ): (Context, TypeMap) = {
 
     val childrenCtx = updateContextForChildren(context, typeMap, e)
 

@@ -19,7 +19,7 @@ class TypeCheckerTest extends FunSuite {
     }
     val empty: Map[String, Type] = Map()
     val map = CombinedTypeCheck.check(ast)
-    val t = map(ast.id)
+    val t = map(ast)
     t
   }
 

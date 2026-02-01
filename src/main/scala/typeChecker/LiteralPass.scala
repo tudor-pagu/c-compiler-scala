@@ -28,12 +28,12 @@ class LiteralPass extends PropagatingTypeChecker[Unit] {
 
   override protected def initializeContext: Unit = ()
 
-  override protected def updateContext(context: Unit, typeMap: Map[AstID, Type], node: AstExt): Unit = context
+  override protected def updateContext(context: Unit, typeMap: TypeMap, node: AstExt): Unit = context
 
-  override protected def updateTypeMap(context: Unit, typeMap: Map[AstID, Type], node: AstExt): Map[Int, Type] = {
+  override protected def updateTypeMap(context: Unit, typeMap: TypeMap, node: AstExt): TypeMap = {
     node.node match {
       case AstExtKind.IntLiteral(_) => {
-        typeMap + (node.id -> NumT(4))
+        typeMap + (node -> NumT(4))
       }
       case _ => typeMap
     }

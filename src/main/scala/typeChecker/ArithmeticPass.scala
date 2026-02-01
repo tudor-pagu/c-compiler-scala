@@ -12,23 +12,99 @@ import tpagu.compiler.typeChecker.FunT
 import tpagu.compiler.CompilerError
 import tpagu.compiler.Span
 
+def checkFunctionCall(
+    e: AstExt,
+    typeMap: TypeMap,
+    f: FunT,
+    args: List[AstExt]
+): Type = {
+  if (args.size != f.paramTypes.size) {
+    throw createError(
+      s"Tried to call a function with ${args.size} arguments, when the function takes ${f.paramTypes.size} parameters.",
+      e.span
+    )
+  }
+  val argTypes = args.map(arg => typeMap(arg))
+  if (argTypes != f.paramTypes) {
+    throw createError(
+      s"Mismatch between types expected by function and arguments.",
+      e.span
+    )
+  }
+  f.returnType
+}
+
+/*
+ * I expand dereference and reference operations as part of "arithmetic" which
+ * is maybe a weird naming
+ */
 class ArithmeticPass extends PropagatingTypeChecker[Unit] {
   override protected def initializeContext: Unit = ()
 
-  override protected def updateTypeMap(context: Unit, typeMap: Map[AstID, Type], node: AstExt): Map[Int, Type] = {
+  override protected def updateTypeMap(
+      context: Unit,
+      typeMap: TypeMap,
+      node: AstExt
+  ): TypeMap = {
     node.node match {
       case AstExtKind.Binary(op, l, r) => {
         op match {
           case (BinaryOp.Add | BinaryOp.Sub | BinaryOp.Mult | BinaryOp.Div) => {
             // TODO: This works now when the only type is int, but will not be correct once we have more types.
-            typeMap + (node.id -> typeMap(l.id))
+            typeMap + (node -> typeMap(l))
           }
         }
       }
+      case AstExtKind.PrefixOperation(op, e) => {
+        op match {
+          case PrefixOp.AddressOf => {
+            val t = typeMap(e)
+            if (isLvalue(e, typeMap)) {
+              typeMap + (node -> PtrT(t, t.qualifiers))
+            } else {
+              throw createError(
+                s"Tried to get the address of rvalue.",
+                e.span
+              )
+            }
+          }
+          case PrefixOp.Dereference => {
+            val t = typeMap(e)
+            t match {
+              case PtrT(inner, qualifiers) => typeMap + (node -> inner)
+              case _ =>
+                throw createError(
+                  s"Tried to dereference non pointer type: ${t.prettyName()}",
+                  node.span
+                )
+            }
+          }
+          case PrefixOp.Negation | PrefixOp.UnaryPlus => {
+            val t = typeMap(e)
+            typeMap + (node -> t)
+          }
+        }
+      }
+      case AstExtKind.PostfixOperation(op: PostfixOp.FunctionCall, e) => {
+        val calleeT = typeMap(e)
+        calleeT match {
+          case t @ FunT(_, _) => {
+            typeMap + (node -> checkFunctionCall(e, typeMap, t, op.args))
+          }
+          case t @ PtrT(innerT: FunT, _) => {
+            typeMap + (node -> checkFunctionCall(e, typeMap, innerT, op.args))
+          }
+          case _ => {
+            throw createError(
+              "Tried to call callee that was not a function or function pointer.",
+              e.span
+            )
+          }
+        }
+      }
+
       case _ => typeMap
     }
   }
 
 }
-
-

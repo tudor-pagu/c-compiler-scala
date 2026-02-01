@@ -25,7 +25,7 @@ trait TypeCheckerPass {
    */
   def check(
       e: AstExt,
-      typeMap: Map[AstID, Type]
-  ): Map[AstID, Type];
+      typeMap: TypeMap
+  ): TypeMap;
 }
 

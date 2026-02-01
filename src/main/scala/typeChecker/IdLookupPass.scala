@@ -11,6 +11,35 @@ import tpagu.compiler.parser.PostfixOp
 import tpagu.compiler.typeChecker.FunT
 import tpagu.compiler.CompilerError
 import tpagu.compiler.Span
+import tpagu.compiler.parser.DeclarationSpecifier
+import tpagu.compiler.parser.Declarator
+
+def updateTypeEnvironmentForDeclaration(
+    node: AstExt,
+    context: TypeEnvironment,
+    initDeclaratorList: List[(Declarator, Option[AstExt])],
+    declSpecifiers: List[DeclarationSpecifier]
+): TypeEnvironment = {
+  var newNv = context;
+  for ((declarator, init) <- initDeclaratorList) {
+
+    // TODO: Get rid of this being needed
+    implicit val typeEnvironment = newNv
+    implicit val span = node.span
+
+    val declaredType = getTypeOfDeclaration(declSpecifiers, declarator)
+
+    val name = getNameOfDeclarator(declarator).getOrElse(
+      throw createError(
+        "Abstract declaration not allowed here. You must give this declaration a name.",
+        node.span
+      )
+    )
+    newNv = newNv + (name -> declaredType)
+  }
+
+  newNv
+}
 
 class IdLookupPass extends PropagatingTypeChecker[TypeEnvironment] {
   def lookupType(identifier: AstExt, env: TypeEnvironment): Type =
@@ -31,7 +60,7 @@ class IdLookupPass extends PropagatingTypeChecker[TypeEnvironment] {
 
   override protected def updateContextForChildren(
       context: TypeEnvironment,
-      typeMap: Map[AstID, Type],
+      typeMap: TypeMap,
       node: AstExt
   ): TypeEnvironment = {
 
@@ -61,13 +90,22 @@ class IdLookupPass extends PropagatingTypeChecker[TypeEnvironment] {
         val nvForBody = newNv ++ getParameterMappings(declaration.declarator)
         nvForBody
       }
+      case AstExtKind.DeclarationList(declSpecifiers, initDeclaratorList) => {
+        updateTypeEnvironmentForDeclaration(
+          node,
+          context,
+          initDeclaratorList,
+          declSpecifiers
+        )
+      }
+
       case _ => context
     }
   }
 
   override protected def updateContext(
       context: TypeEnvironment,
-      typeMap: Map[AstID, Type],
+      typeMap: TypeMap,
       node: AstExt
   ): TypeEnvironment = {
     node.node match {
@@ -89,25 +127,12 @@ class IdLookupPass extends PropagatingTypeChecker[TypeEnvironment] {
       }
 
       case AstExtKind.DeclarationList(declSpecifiers, initDeclaratorList) => {
-        var newNv = context;
-        for ((declarator, init) <- initDeclaratorList) {
-
-          // TODO: Get rid of this being needed
-          implicit val typeEnvironment = newNv
-          implicit val span = node.span
-
-          val declaredType = getTypeOfDeclaration(declSpecifiers, declarator)
-
-          val name = getNameOfDeclarator(declarator).getOrElse(
-            throw createError(
-              "Abstract declaration not allowed here. You must give this declaration a name.",
-              node.span
-            )
-          )
-          newNv = newNv + (name -> declaredType)
-        }
-
-        newNv
+        updateTypeEnvironmentForDeclaration(
+          node,
+          context,
+          initDeclaratorList,
+          declSpecifiers
+        )
       }
 
       case _ => context
@@ -116,12 +141,21 @@ class IdLookupPass extends PropagatingTypeChecker[TypeEnvironment] {
 
   override protected def updateTypeMap(
       context: TypeEnvironment,
-      typeMap: Map[AstID, Type],
+      typeMap: TypeMap,
       node: AstExt
-  ): Map[Int, Type] = {
+  ): TypeMap = {
     node.node match {
       case AstExtKind.Identifier(name) => {
-        typeMap + (node.id -> lookupType(node, context))
+        typeMap + (node -> lookupType(node, context))
+      }
+      case AstExtKind.DeclarationList(declSpecifiers, initDeclaratorList) => {
+        val types = initDeclaratorList.map((decl, init) => {
+          implicit val typeEnvironment = context
+          implicit val span = node.span
+
+          getTypeOfDeclaration(declSpecifiers, decl)
+        })
+        typeMap.updateDeclarationMap(node, types)
       }
       case _ => typeMap
     }
