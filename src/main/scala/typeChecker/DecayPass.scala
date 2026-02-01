@@ -26,6 +26,7 @@ class DecayPass extends PropagatingTypeChecker[Boolean] {
 
     node.node match {
       case AstExtKind.Binary(op, l, r) => true
+      case AstExtKind.PostfixOperation(op, e) => true
       case AstExtKind.PrefixOperation(op, e) => {
         op match {
           case PrefixOp.UnaryPlus => true
@@ -35,6 +36,7 @@ class DecayPass extends PropagatingTypeChecker[Boolean] {
       }
       case AstExtKind.DeclarationList(_,_) => true
       case AstExtKind.Assignment(_,_) => true
+      case AstExtKind.Return(_) => true
 
       case _ => context
     }

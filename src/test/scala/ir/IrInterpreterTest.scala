@@ -493,35 +493,6 @@ class IrInterpreterTest extends FunSuite {
     )
   }
 
-  // TODO: implement this
-  //
-  // test("void argument list") {
-  //   irInterpHelper(
-  //     """
-  //     int foo(void) {
-  //       return 42;
-  //     }
-  //     int main() {
-  //       return foo();
-  //     }
-  //     """, 42
-  //   )
-  // }
-  // TODO: void
-  // test("function pointer test") {
-  //   irInterpHelper(
-  //     """
-  //     int foo() {
-  //       return 42;
-  //     }
-  //     int main() {
-  //       int (*p)(void) = foo;
-  //       return p();
-  //
-  //     }
-  //     """, 42)
-  // }
-
   test("function pointer with any args") {
     irInterpHelper(
       """
@@ -568,9 +539,10 @@ class IrInterpreterTest extends FunSuite {
       5
     )
 
-    test("function pointer - reassignment") {
-      irInterpHelper(
-        """
+  }
+  test("function pointer - reassignment") {
+    irInterpHelper(
+      """
     int f() { return 1; }
     int g() { return 2; }
     int main() {
@@ -579,13 +551,13 @@ class IrInterpreterTest extends FunSuite {
       return p();
     }
     """,
-        2
-      )
-    }
+      2
+    )
+  }
 
-    test("function pointer - passed as argument") {
-      irInterpHelper(
-        """
+  test("function pointer - passed as argument") {
+    irInterpHelper(
+      """
     int apply(int (*f)(int), int x) {
       return f(x);
     }
@@ -594,27 +566,30 @@ class IrInterpreterTest extends FunSuite {
       return apply(inc, 5);
     }
     """,
-        6
-      )
-    }
+      6
+    )
+  }
 
-    test("function pointer - returned from function") {
-      irInterpHelper(
-        """
-    int add(int x, int y) { return x + y; }
-    int (*getfn())(int, int) { return add; }
+  test("function pointer - returned from function") {
+    irInterpHelper(
+      """
+    int add(int x, long long y) { return x + y; }
+    int (*getfn())(int, long long) { return add; }
     int main() {
-      int (*p)(int, int) = getfn();
-      return p(3, 4);
+      int (*p)(int,long long ) = getfn();
+      long long x = 4;
+      int result = p(3, x);
+      result = (result + 1) * 2;
+      return result;
     }
     """,
-        7
-      )
-    }
+      16
+    )
+  }
 
-    test("function pointer - double pointer") {
-      irInterpHelper(
-        """
+  test("function pointer - double pointer") {
+    irInterpHelper(
+      """
     int f() { return 42; }
     int main() {
       int (*p)() = f;
@@ -622,26 +597,26 @@ class IrInterpreterTest extends FunSuite {
       return (*pp)();
     }
     """,
-        42
-      )
-    }
+      42
+    )
+  }
 
-    test("function pointer - call through dereference") {
-      irInterpHelper(
-        """
+  test("function pointer - call through dereference") {
+    irInterpHelper(
+      """
     int f() { return 10; }
     int main() {
       int (*p)() = f;
       return (*p)();
     }
     """,
-        10
-      )
-    }
+      10
+    )
+  }
 
-    test("function pointer - nested calls") {
-      irInterpHelper(
-        """
+  test("function pointer - nested calls") {
+    irInterpHelper(
+      """
     int f(int x) { return x * 2; }
     int g(int x) { return x + 1; }
     int main() {
@@ -650,26 +625,37 @@ class IrInterpreterTest extends FunSuite {
       return pf(pg(3));
     }
     """,
-        8
-      )
-    }
-
-    // numerical conversion should be allowed here
-    // TODO:
-    // irInterpHelper(
-    //   """
-    //   int foo(int x, int y) {
-    //       return x + y;
-    //   }
-    //   int main() {
-    //     int (*p)(int, int) = foo;
-    //     int x = 2;
-    //     long long y = 5;
-    //     return p(x,y);
-    //   }
-    //   """, 7
-    //   )
-
+      8
+    )
   }
 
 }
+
+// TODO: implement this
+//
+// test("void argument list") {
+//   irInterpHelper(
+//     """
+//     int foo(void) {
+//       return 42;
+//     }
+//     int main() {
+//       return foo();
+//     }
+//     """, 42
+//   )
+// }
+// TODO: void
+// test("function pointer test") {
+//   irInterpHelper(
+//     """
+//     int foo() {
+//       return 42;
+//     }
+//     int main() {
+//       int (*p)(void) = foo;
+//       return p();
+//
+//     }
+//     """, 42)
+// }

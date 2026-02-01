@@ -52,9 +52,7 @@ case class PtrT(innerT: Type, qualifiers: TypeQualifiers = TypeQualifiers())
 
 case class FunT(returnType: Type, paramTypes: List[Type]) extends Type {
   override def size(): Int = {
-    throw RuntimeException(
-      "Tried to take size of a function type. This should not be allowed by the type checker."
-    )
+    8
   }
   override def alignment(): Long = {
     throw RuntimeException(

@@ -296,7 +296,7 @@ object IRGenerator {
               _ <- IRMonad.emit(IR.Call(Label(name), computedArgs, reg))
             } yield (reg)
           }
-          case (Identifier(name, idt), PtrT(innerT: FunT, qualifiers)) => {
+          case (_, PtrT(_: FunT,_)) | (_, FunT(_,_)) => {
             for {
               addrExpr <- produceExpression(callee)
               computedArgs <- IRMonad.sequence(
@@ -321,7 +321,7 @@ object IRGenerator {
           }
           case _ => {
             throw RuntimeException(
-              "Was asked to produce expression of non-variable identifier."
+              s"Was asked to produce expression of non-variable identifier: ${e}"
             )
           }
         }

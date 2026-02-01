@@ -15,6 +15,7 @@ import tpagu.compiler.parser.Declarator
 import tpagu.compiler.parser.DeclaratorSuffix
 import tpagu.compiler.typeChecker.TypeMap
 import tpagu.compiler.typeChecker.NoneT
+import tpagu.compiler.parser.DirectDeclarator
 
 object Desugar {
   // the typeMap is produced by the TypeChecker as it type checks a program.
@@ -55,7 +56,21 @@ object Desugar {
         }
       ))
       case AstExtKind.FunctionDefinition(declaration, body) => {
-        declaration.declarator.suffixes match {
+        def getSuffixes(decl:Declarator):List[DeclaratorSuffix] = {
+          decl.direct match {
+            case DirectDeclarator.InnerDeclarator(innerDecl) => {
+              val innerSuf = getSuffixes(innerDecl)
+              if (!innerSuf.isEmpty) {
+                innerSuf
+              } else {
+                decl.suffixes
+              }
+            }
+            case _ => decl.suffixes
+          }
+        }
+
+        getSuffixes(declaration.declarator) match {
           case List(DeclaratorSuffix.Params(params)) => {
             val name = declaration.declarator.getName() match {
               case Some(name_) => name_
