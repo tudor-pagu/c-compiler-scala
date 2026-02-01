@@ -6,6 +6,8 @@ import tpagu.compiler.typeChecker.TypeCheck
 import tpagu.compiler.typeChecker.Type
 import tpagu.compiler.desugar.Desugar
 import tpagu.compiler.GoldCopyFunSuite
+import tpagu.compiler.typeChecker.CombinedTypeCheck
+import tpagu.compiler.typeChecker.TypeMap
 
 class DesugarTest extends GoldCopyFunSuite {
   def desugarHelper(input: String): String = {
@@ -16,9 +18,7 @@ class DesugarTest extends GoldCopyFunSuite {
     }
     val typeChecker = TypeCheck()
     val empty: Map[String, Type] = Map()
-    typeChecker.typeOf(ast, empty)
-    implicit val typeMap = typeChecker.typeMap
-    implicit val declarationTypeMap = typeChecker.declarationTypeMap
+    implicit val typeMap:TypeMap = CombinedTypeCheck.check(ast)
     val coreAst = Desugar.desugar(ast)
     coreAst.toString()
   }

@@ -61,6 +61,28 @@ object IRMonad {
     })
   }
 
+  /*
+   * Needed because a name can either be a variable, in which
+   * case we need to do a memory load,
+   *
+   * or it can be a declared function name, in which case we just need to directly
+   * emit a label.
+   */
+  def identifierLookup(id: Identifier): IRMonad[Operand] = {
+    IRMonad(ir => {
+      if (ir.variableMap.contains(id.name)) {
+        val mon = (for {
+          idReg <- IRMonad.nameLookup(id.name)
+          destReg <- IRGenerator.getNewRegister()
+          _ <- IRMonad.emit(IR.Load(idReg, destReg, width = id.t.size().toInt))
+        } yield destReg)
+        mon.run(ir)
+      } else {
+        (Nil, ir, ir.funLookup(id.name))
+      }
+    })
+  }
+
   def withNewVariable(name: String, register: Register): IRMonad[Unit] = {
     IRMonad(
       { ir =>
@@ -79,10 +101,17 @@ object IRMonad {
     }
   }
 
-  /**
-   * These two functions are used to save and restore the variable map, in order to
-   * achieve certain scoping semantics.
-   */
+  def withNewFunction(function: String): IRMonad[Unit] = {
+    IRMonad { ir =>
+      {
+        (Nil, ir.withNewFunMap(function, Label(function)), ())
+      }
+    }
+  }
+
+  /** These two functions are used to save and restore the variable map, in
+    * order to achieve certain scoping semantics.
+    */
   def saveVariableMap(): IRMonad[VariableMap] = {
     IRMonad(ir => {
       (Nil, ir, ir.variableMap)
@@ -128,7 +157,7 @@ class IRGenerator(
     val x = functionMap.get(name)
     if (x.isEmpty) {
       throw new RuntimeException(
-        f"Tried to lookup $name but it was not set in the variableMap."
+        f"Tried to lookup $name but it was not set in the function map."
       )
     }
     x.get
@@ -245,7 +274,7 @@ object IRGenerator {
         for {
           lop <- produceExpression(e)
           reg <- getNewRegister()
-          _ <- IRMonad.emit(IR.Load(lop, reg, width=t.size()))
+          _ <- IRMonad.emit(IR.Load(lop, reg, width = t.size()))
         } yield reg
       }
 
@@ -267,18 +296,16 @@ object IRGenerator {
               _ <- IRMonad.emit(IR.Call(Label(name), computedArgs, reg))
             } yield (reg)
           }
-          case (Identifier(name, idt), PtrT(innerT:FunT, qualifiers)) => {
+          case (Identifier(name, idt), PtrT(innerT: FunT, qualifiers)) => {
             for {
               addrExpr <- produceExpression(callee)
-              addr <- getNewRegister()
-              _ <- IRMonad.emit(IR.Load(addrExpr, addr, width=idt.size()))
               computedArgs <- IRMonad.sequence(
                 args.map(arg => produceExpression(arg))
-                )
+              )
               retReg <- getNewRegister()
-              _ <- IRMonad.emit(IR.Call(addr, computedArgs, retReg))
+              _ <- IRMonad.emit(IR.Call(addrExpr, computedArgs, retReg))
 
-            } yield(retReg)
+            } yield (retReg)
           }
 
           case _ =>
@@ -287,14 +314,10 @@ object IRGenerator {
             )
         }
       }
-      case Identifier(name, t) => {
+      case id @ Identifier(name, t) => {
         t match {
           case NumT(_, _, _) | PtrT(_, _) => {
-            for {
-              idReg <- IRMonad.nameLookup(name)
-              destReg <- getNewRegister()
-              _ <- IRMonad.emit(IR.Load(idReg, destReg, width = t.size().toInt))
-            } yield destReg
+            IRMonad.identifierLookup(id)
           }
           case _ => {
             throw RuntimeException(
@@ -360,8 +383,10 @@ object IRGenerator {
 
         // TODO this might mess up scope but I'm not 100% sure.
         for {
+          _ <- IRMonad.withNewFunction(name)
+
           // we save and restore the variable map to maintain scoping semantics:
-          // Whatever happens inside a function (including params, etc.) should not 
+          // Whatever happens inside a function (including params, etc.) should not
           // leak outside of it
           vMap <- IRMonad.saveVariableMap()
 

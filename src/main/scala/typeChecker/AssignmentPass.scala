@@ -84,10 +84,6 @@ class AssignmentPass extends PropagatingTypeChecker[Unit] {
             case Some(initValue) => {
               val initType = typeMap(initValue)
 
-              if (initType.isInstanceOf[PtrT]) {
-                println(s"tpagu debug: ${declaredType} = ${initType} | CONVERSION = ${declaredType != initType}")
-              }
-
               if (declaredType != initType && !isAssignmentConversionAllowed(declaredType, initType)) {
                 throw createError(s"Tried to initialize `${declPair._1.getName().get}` which is declared to be of type ${declaredType.prettyName()} with initializer of type ${initType.prettyName()}", node.span)
               }

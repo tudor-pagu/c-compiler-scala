@@ -115,11 +115,14 @@ class IrInterpreter {
     }.toMap
 
   // operand to value
-  def opValue(op: Operand)(implicit regs: mutable.Map[Long, Long]) = op match {
-    case Immediate(value) => value
-    case Label(_)         => throw RuntimeException("Cannot get value of label")
-    case Register(id)     => regs.get(id).get
-  }
+  def opValue(
+      op: Operand
+  )(implicit regs: mutable.Map[Long, Long], labelMap: Map[Label, Int]) =
+    op match {
+      case Immediate(value) => value
+      case l @ Label(_)     => labelMap(l).toLong
+      case Register(id)     => regs.get(id).get
+    }
 
   // instruction will never be return, that is handled separately
   @tailrec
@@ -139,8 +142,16 @@ class IrInterpreter {
       case Neg(v, result)   => regs(result.id) = -opValue(v)
       case Mov(src, dst)    => regs(dst.id) = opValue(src)
       case LabelDecl(label) => {}
-      case Call(f: Label, args, result) => {
-        val nextLine = labelMap(f)
+      case Call(f, args, result) => {
+        val nextLine = (f match {
+          case l @ Label(_) => {
+            labelMap(l)
+          }
+          case Register(id) => {
+            regs(id).toInt
+          }
+        })
+
         returnAddresses.push(line)
         val functionDefinition = program(nextLine)
         functionDefinition match {
@@ -150,7 +161,9 @@ class IrInterpreter {
             }
           }
           case _ => {
-            throw RuntimeException("IR interperter error: called to instruction that is not function")
+            throw RuntimeException(
+              s"IR interperter error: called to instruction that is not function: line ${line}. Program:\n${program.mkString("\n")}"
+            )
           }
         }
         return interpInstr(nextLine + 1)

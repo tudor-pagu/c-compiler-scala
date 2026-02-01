@@ -7,6 +7,8 @@ import tpagu.compiler.parser.translationUnit
 import tpagu.compiler.typeChecker.{Type, TypeCheck}
 import scala.util.matching.Regex
 import tpagu.compiler.GoldCopyFunSuite
+import tpagu.compiler.typeChecker.CombinedTypeCheck
+import tpagu.compiler.typeChecker.TypeMap
 private val AnsiRegex: Regex = raw"\u001B\[[0-9;]*m".r
 class IrGenTest extends GoldCopyFunSuite {
   private def normalize(s: String): String =
@@ -25,9 +27,7 @@ class IrGenTest extends GoldCopyFunSuite {
     }
     val typeChecker = TypeCheck()
     val empty: Map[String, Type] = Map()
-    typeChecker.typeOf(ast, empty)
-    implicit val typeMap = typeChecker.typeMap
-    implicit val declarationTypeMap = typeChecker.declarationTypeMap
+    implicit val typeMap:TypeMap = CombinedTypeCheck.check(ast)
     val coreAst = Desugar.desugar(ast)
     val irgen = IRGenerator.newIrGenerator()
     val program = IRGenerator.pub_lower(coreAst)

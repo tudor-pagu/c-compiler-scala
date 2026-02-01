@@ -18,8 +18,12 @@ import tpagu.compiler.parser.AstExt
  * is itself an AST node) so that it can later be used by the assignment stage.
  *
  */
-class TypeMap(map: Map[AstID, Type], declarationMap: Map[AstID, List[Type]]) {
-  def this() = this(Map.empty, Map.empty)
+class TypeMap(
+    map: Map[AstID, Type],
+    declarationMap: Map[AstID, List[Type]],
+    functionMap: Map[AstID, Type]
+) {
+  def this() = this(Map.empty, Map.empty, Map.empty)
 
   def apply(key: AstExt): Type =
     map.getOrElse(
@@ -28,13 +32,17 @@ class TypeMap(map: Map[AstID, Type], declarationMap: Map[AstID, List[Type]]) {
     )
 
   def +(kv: (AstExt, Type)): TypeMap =
-    TypeMap(map + (kv._1.id -> kv._2), declarationMap)
-
+    TypeMap(map + (kv._1.id -> kv._2), declarationMap, functionMap)
 
   def updateDeclarationMap(key: AstExt, types: List[Type]) =
-    TypeMap(map, declarationMap + (key.id -> types))
+    TypeMap(map, declarationMap + (key.id -> types), functionMap)
 
-  def getTypesOfDeclaration(key:AstExt) = declarationMap(key.id)
+  def getTypesOfDeclaration(key: AstExt) = declarationMap(key.id)
 
-    def get(key: AstExt): Option[Type] = map.get(key.id)
+  def get(key: AstExt): Option[Type] = map.get(key.id)
+
+  def updateFunctionMap(key: AstExt, t : Type) =
+    TypeMap(map, declarationMap, functionMap + (key.id -> t))
+
+  def getTypeOfFunction(key: AstExt) = functionMap(key.id)
 }

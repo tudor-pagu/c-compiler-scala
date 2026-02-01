@@ -148,6 +148,14 @@ class IdLookupPass extends PropagatingTypeChecker[TypeEnvironment] {
       case AstExtKind.Identifier(name) => {
         typeMap + (node -> lookupType(node, context))
       }
+      case AstExtKind.FunctionDefinition(declaration, body) => {
+        implicit val typeEnvironment = context
+        implicit val span = node.span
+
+        val declarationType = getTypeOfDeclaration(declaration)
+
+        typeMap.updateFunctionMap(node, declarationType)
+      }
       case AstExtKind.DeclarationList(declSpecifiers, initDeclaratorList) => {
         val types = initDeclaratorList.map((decl, init) => {
           implicit val typeEnvironment = context
