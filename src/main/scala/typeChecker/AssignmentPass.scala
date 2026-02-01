@@ -27,6 +27,25 @@ def isLvalue(e: AstExt, typeMap: TypeMap): Boolean =
     // TODO add more cases, for now we just support identifiers.
   }
 
+
+
+def isAssignmentConversionAllowed(left:Type, right:Type):Boolean = {
+  (left, right) match {
+    // for now its very simple: all numerical conversions are just allowed
+    case (NumT(wl, sl, ql), NumT(wr, sr, qr)) => {
+      true
+    }
+    case (PtrT(innerL, qualsL), PtrT(innerR, qualsR)) => {
+      return Type.qualifierCompatibleTypes(Type.dropQualifiers(left), Type.dropQualifiers(right))
+      // TODO: Handle void*
+    }
+    case _ => {
+      false
+    }
+  }
+
+}
+
 class AssignmentPass extends PropagatingTypeChecker[Unit] {
   override protected def initializeContext: Unit = ()
 
@@ -44,13 +63,17 @@ class AssignmentPass extends PropagatingTypeChecker[Unit] {
           throw createError(s"Trying to assign to non-lvalue.", left.span)
         }
 
-        if (leftT != rightT) {
-          throw createError(
-            s"Can't assign type ${rightT.prettyName()} to type ${leftT.prettyName()}",
-            node.span
-          )
+        val tm1 = if (leftT != rightT) {
+          if (isAssignmentConversionAllowed(leftT, rightT)) {
+            typeMap + (right -> leftT)
+          } else {
+            throw createError(s"Can't assign type ${rightT.prettyName()} to type ${leftT.prettyName()}.", node.span)
+          }
+        } else {
+          typeMap
         }
-        typeMap + (node -> rightT)
+
+        tm1 + (node -> rightT)
       }
       case AstExtKind.DeclarationList(declSpecifiers, initDeclaratorList) => {
         val declaredTypes = typeMap.getTypesOfDeclaration(node)
@@ -60,8 +83,9 @@ class AssignmentPass extends PropagatingTypeChecker[Unit] {
           declPair._2 match {
             case Some(initValue) => {
               val initType = typeMap(initValue)
-              if (declaredType != initType) {
-                throw createError(s"Tried to initialize `${declPair._1.getName().get}` which is declared to be of type ${declaredType} with initializer of type ${initType}", node.span)
+
+              if (declaredType != initType && !isAssignmentConversionAllowed(declaredType, initType)) {
+                throw createError(s"Tried to initialize `${declPair._1.getName().get}` which is declared to be of type ${declaredType.prettyName()} with initializer of type ${initType.prettyName()}", node.span)
               }
             }
             case None => {}

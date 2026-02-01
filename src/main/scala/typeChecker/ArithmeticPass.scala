@@ -12,6 +12,14 @@ import tpagu.compiler.typeChecker.FunT
 import tpagu.compiler.CompilerError
 import tpagu.compiler.Span
 
+def takeMaxWidth(l: NumT, r: NumT): NumT = {
+  if (l.width > r.width) {
+    l
+  } else {
+    r
+  }
+}
+
 def checkFunctionCall(
     e: AstExt,
     typeMap: TypeMap,
@@ -34,6 +42,27 @@ def checkFunctionCall(
   f.returnType
 }
 
+def binaryOpConversion(l: Type, r: Type, span: Span): Type = {
+  (l, r) match {
+    case (
+          lt @ NumT(widthLeft, signedLeft, qualsLeft),
+          rt @ NumT(widthRight, signedRight, qualsRight)
+        ) => {
+      if (widthLeft == widthRight) {
+        NumT(widthLeft, signedLeft && signedRight)
+      } else {
+        takeMaxWidth(lt, rt)
+      }
+    }
+    case _ => {
+      throw createError(
+        s"Could not convert between types: ${l} and ${r} for binary operation.",
+        span
+      )
+    }
+  }
+}
+
 /*
  * I expand dereference and reference operations as part of "arithmetic" which
  * is maybe a weird naming
@@ -50,8 +79,16 @@ class ArithmeticPass extends PropagatingTypeChecker[Unit] {
       case AstExtKind.Binary(op, l, r) => {
         op match {
           case (BinaryOp.Add | BinaryOp.Sub | BinaryOp.Mult | BinaryOp.Div) => {
-            // TODO: This works now when the only type is int, but will not be correct once we have more types.
-            typeMap + (node -> typeMap(l))
+            val leftT = typeMap(l)
+            val rightT = typeMap(r)
+            val t = (if (leftT != rightT) {
+                       // we try to convert
+                       binaryOpConversion(leftT, rightT, node.span)
+                     } else {
+                       leftT
+                     })
+
+            typeMap + (node -> t)
           }
         }
       }
@@ -81,6 +118,13 @@ class ArithmeticPass extends PropagatingTypeChecker[Unit] {
           }
           case PrefixOp.Negation | PrefixOp.UnaryPlus => {
             val t = typeMap(e)
+            if (!t.isInstanceOf[NumT]) {
+              throw createError(
+                "Tried to apply unary arithmetic operation to non number type.",
+                node.span
+              )
+            }
+
             typeMap + (node -> t)
           }
         }

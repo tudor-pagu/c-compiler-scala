@@ -19,6 +19,10 @@ object CombinedTypeCheck {
     val passes = List(
       IdLookupPass(),
       LiteralPass(),
+
+      IntegerPromotionPass(),
+
+      // time to combine everything
       ArithmeticPass(),
       AssignmentPass()
     )

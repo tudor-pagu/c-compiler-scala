@@ -35,4 +35,6 @@ class TypeMap(map: Map[AstID, Type], declarationMap: Map[AstID, List[Type]]) {
     TypeMap(map, declarationMap + (key.id -> types))
 
   def getTypesOfDeclaration(key:AstExt) = declarationMap(key.id)
+
+    def get(key: AstExt): Option[Type] = map.get(key.id)
 }

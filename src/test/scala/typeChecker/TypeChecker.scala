@@ -550,14 +550,51 @@ class TypeCheckerTest extends FunSuite {
       }
       """
     )
-    expectTypePass(
+    expectTypeError(
       """
       int main() {
         int * * x;
         int const * * y = x;
       }
+      """, ""
+    )
+
+    expectTypeError(
+      """
+      int main() {
+        int * * **x;
+        int const * * * * y = x;
+      }
+      """, ""
+    )
+
+    expectTypeError(
+      """
+      int main() {
+        int * * **x;
+        int const * const * * * y = x;
+      }
+      """, ""
+    )
+
+    expectTypeError(
+      """
+      int main() {
+        int * * **x;
+        int const * const * * const * y = x;
+      }
+      """, ""
+    )
+
+    expectTypePass(
+      """
+      int main() {
+        int * * **x;
+        int const * const * const * const * y = x;
+      }
       """
     )
+
     expectTypeError(
       """
       int main() {
@@ -576,6 +613,17 @@ class TypeCheckerTest extends FunSuite {
       """,
       ""
     )
+    
+    expectTypeError(
+      """
+      int main() {
+        int ** x;
+        int * * * y = x;
+      }
+      """,
+      ""
+    )
+
     expectTypePass(
       """
       int main() {
@@ -601,6 +649,17 @@ class TypeCheckerTest extends FunSuite {
       """
     )
 
+  }
+
+  test("usual arithmetic conversion 1") {
+    expectTypePass("""
+        int main() {
+          long long x = 1;
+          int y = 2;
+          long long z = x + y;
+          return 0;
+        }
+      """)
   }
 
   test("long type tests") {
@@ -630,7 +689,7 @@ class TypeCheckerTest extends FunSuite {
         int* p2 = p1;
       }
       """,
-      "type long long and type int are not the same."
+      ""
     )
   }
 
