@@ -36,7 +36,7 @@ def isAssignmentConversionAllowed(left:Type, right:Type):Boolean = {
       true
     }
     case (PtrT(innerL, qualsL), PtrT(innerR, qualsR)) => {
-      return Type.qualifierCompatibleTypes(Type.dropQualifiers(left), Type.dropQualifiers(right))
+      Type.qualifierCompatibleTypes(Type.dropQualifiers(left), Type.dropQualifiers(right))
       // TODO: Handle void*
     }
     case _ => {
@@ -83,6 +83,10 @@ class AssignmentPass extends PropagatingTypeChecker[Unit] {
           declPair._2 match {
             case Some(initValue) => {
               val initType = typeMap(initValue)
+
+              if (initType.isInstanceOf[PtrT]) {
+                println(s"tpagu debug: ${declaredType} = ${initType} | CONVERSION = ${declaredType != initType}")
+              }
 
               if (declaredType != initType && !isAssignmentConversionAllowed(declaredType, initType)) {
                 throw createError(s"Tried to initialize `${declPair._1.getName().get}` which is declared to be of type ${declaredType.prettyName()} with initializer of type ${initType.prettyName()}", node.span)

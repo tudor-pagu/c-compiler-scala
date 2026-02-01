@@ -556,7 +556,8 @@ class TypeCheckerTest extends FunSuite {
         int * * x;
         int const * * y = x;
       }
-      """, ""
+      """,
+      ""
     )
 
     expectTypeError(
@@ -565,7 +566,8 @@ class TypeCheckerTest extends FunSuite {
         int * * **x;
         int const * * * * y = x;
       }
-      """, ""
+      """,
+      ""
     )
 
     expectTypeError(
@@ -574,7 +576,8 @@ class TypeCheckerTest extends FunSuite {
         int * * **x;
         int const * const * * * y = x;
       }
-      """, ""
+      """,
+      ""
     )
 
     expectTypeError(
@@ -583,7 +586,8 @@ class TypeCheckerTest extends FunSuite {
         int * * **x;
         int const * const * * const * y = x;
       }
-      """, ""
+      """,
+      ""
     )
 
     expectTypePass(
@@ -613,7 +617,7 @@ class TypeCheckerTest extends FunSuite {
       """,
       ""
     )
-    
+
     expectTypeError(
       """
       int main() {
@@ -758,7 +762,7 @@ class TypeCheckerTest extends FunSuite {
         foo_t a;
       }
       """
-      )
+    )
 
     expectParseError(
       """
@@ -769,7 +773,7 @@ class TypeCheckerTest extends FunSuite {
         foo_t a;
       }
       """
-      )
+    )
   }
   test("nested typedefs") {
     expectTypePass(
@@ -781,7 +785,7 @@ class TypeCheckerTest extends FunSuite {
         return y + 1;
       }
       """
-      )
+    )
   }
 
   test("more complex typedefs") {
@@ -791,8 +795,9 @@ class TypeCheckerTest extends FunSuite {
         typedef int int_sub;
         long int_sub x;
       }
-      """, ""
-      )
+      """,
+      ""
+    )
 
     expectTypePass(
       """
@@ -801,7 +806,7 @@ class TypeCheckerTest extends FunSuite {
         ll x;
       }
       """
-      )
+    )
   }
 
   test("bad function pointers") {
@@ -814,10 +819,114 @@ class TypeCheckerTest extends FunSuite {
         int (*p)(long long, int) = foo;
         return p(2,3);
       }
-      """, ""
-      )
+      """,
+      ""
+    )
 
   }
 
+  test("function to ptr decay 1") {
+    expectTypePass(
+      """
+      int foo(int x, int y) {
+        return x + y;
+      }
+      int main() {
+        int (*p)(int ,int) = foo;
+      }
+      """
+    )
+
+    expectTypePass(
+      """
+      int foo(int x, int y) {
+        return x + y;
+      }
+      int main() {
+        int (*p)(int ,int);
+        p = foo;
+      }
+      """
+    )
+  }
+
+  test("function pointer decay - basic") {
+    expectTypePass("""
+    int f() { return 1; }
+    int main() { int (*p)() = f; }
+  """)
+  }
+
+  test("function pointer decay - pointer to function pointer") {
+    expectTypePass("""
+    int f() { return 1; }
+    int main() { int (**pp)() = &f; }
+  """)
+  }
+
+  test("function pointer decay - wrong return type") {
+    expectTypeError(
+      """
+    int f() { return 1; }
+    int main() { long long (*p)() = f; }
+  """,
+      ""
+    )
+  }
+
+  test("function pointer decay - wrong param count") {
+    expectTypeError(
+      """
+    int f(int x) { return x; }
+    int main() { int (*p)() = f; }
+  """,
+      ""
+    )
+  }
+
+  test("function pointer decay - wrong param type") {
+    expectTypeError(
+      """
+    int f(int x) { return x; }
+    int main() { int (*p)(long long) = f; }
+  """,
+      ""
+    )
+  }
+
+  test("function pointer decay - function returning pointer") {
+    expectTypePass("""
+    int* f() { return 0; }
+    int main() { int* (*p)() = f; }
+  """)
+  }
+
+  test("function pointer decay - function returning pointer and typedef") {
+    expectTypePass("""
+    int* f() { return 0; }
+    int main() { 
+      typedef int int_type;
+    int_type* (*p)() = f; 
+    }
+  """)
+  }
+
+  test("function pointer decay - function returning function pointer") {
+    expectTypePass("""
+    int g() { return 1; }
+    int (*f())() { return g; }
+    int main() { int (*(*p)())() = f; }
+  """)
+  }
+
+  test("function pointer decay - const mismatch on return") {
+    expectTypeError(
+      """
+    int* f() { return 0; }
+    int main() { const int* (*p)() = f; }
+  """,
+      ""
+    )
+  }
 
 }

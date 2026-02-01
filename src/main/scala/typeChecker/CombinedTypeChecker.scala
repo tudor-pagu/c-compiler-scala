@@ -20,6 +20,7 @@ object CombinedTypeCheck {
       IdLookupPass(),
       LiteralPass(),
 
+      DecayPass(),
       IntegerPromotionPass(),
 
       // time to combine everything

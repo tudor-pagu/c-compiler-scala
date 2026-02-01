@@ -118,6 +118,7 @@ object Type {
    * and left has strictly more qualifiers than right
    */
   def qualifierCompatibleTypes(left: Type, right: Type): Boolean = {
+
     (left, right) match {
       case (NumT(_,_,lQuals), NumT(_,_,rQuals)) => {
         return dropQualifiers(left) == dropQualifiers(right) && qualifierSuperset(lQuals, rQuals)
@@ -125,8 +126,9 @@ object Type {
       case (PtrT(innerL, qualsL), PtrT(innerR, qualsR)) => {
         return qualifierCompatibleTypes(innerL, innerR) && qualifierSuperset(qualsL, qualsR) && (!pointsToConst(innerL) || pointsToConst(left))
       }
-      case _ => false
+      case _ => {
+        return false
+      }
     }
-    return dropQualifiers(left) == dropQualifiers(right) && qualifierSuperset(left.qualifiers, right.qualifiers)
   }
 }
