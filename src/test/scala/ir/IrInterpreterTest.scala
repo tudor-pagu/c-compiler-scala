@@ -640,6 +640,32 @@ class IrInterpreterTest extends FunSuite {
     )
   }
 
+  test("basic array test") {
+    irInterpHelper(
+      """
+      int main() {
+        int a[10];
+        *a = 10;
+        return *a;
+      }
+      """,
+      10
+    )
+
+  }
+
+  test("interp dereferncing a reference of an lvalue") {
+    irInterpHelper(
+      """
+      int main() {
+        int a = 4;
+        return *(&a);
+      }
+      """,
+      4
+    )
+  }
+
 }
 
 // TODO: implement this

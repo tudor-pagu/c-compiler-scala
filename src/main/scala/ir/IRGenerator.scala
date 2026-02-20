@@ -6,6 +6,7 @@ import tpagu.compiler.desugar.*
 import tpagu.compiler.typeChecker.{FunT, NumT}
 import tpagu.compiler.ir.IR.Load
 import tpagu.compiler.typeChecker.PtrT
+import tpagu.compiler.typeChecker.ArrayT
 
 type VariableMap = Map[String, Register]
 
@@ -280,7 +281,6 @@ object IRGenerator {
 
       case AddressOf(e, t) => {
         for {
-          lop <- produceExpression(e)
           addr <- getAddressOfLvalue(e)
         } yield (addr)
       }
@@ -296,7 +296,7 @@ object IRGenerator {
               _ <- IRMonad.emit(IR.Call(Label(name), computedArgs, reg))
             } yield (reg)
           }
-          case (_, PtrT(_: FunT,_)) | (_, FunT(_,_)) => {
+          case (_, PtrT(_: FunT, _)) | (_, FunT(_, _)) => {
             for {
               addrExpr <- produceExpression(callee)
               computedArgs <- IRMonad.sequence(
@@ -359,11 +359,38 @@ object IRGenerator {
         } yield ()
       }
       case VarDefinition(name, t) => {
-        for {
-          reg <- getNewRegister()
-          _ <- IRMonad.emit(Alloc(reg, t.size(), t.alignment()))
-          _ <- IRMonad.withNewVariable(name, reg)
-        } yield ()
+        t match {
+          case ArrayT(length, innerT) => (
+            /** Special case to handle array's semantics: We create a "phantom"
+              * pointer that points to the address of the array, which will be
+              * the register that actually backs up the identifier of the array,
+              * and which is really passed around. This works nicely with C's
+              * decay semantics for arrays, and should be eventually optimized
+              * out.
+              */
+            for {
+              arrayReg <- getNewRegister()
+              ptrToArrayReg <- getNewRegister()
+              _ <- IRMonad.emit(Alloc(arrayReg, t.size(), t.alignment()))
+              _ <- IRMonad.emit(
+                Alloc(
+                  ptrToArrayReg,
+                  PtrT(innerT).size(),
+                  PtrT(innerT).alignment()
+                )
+              )
+              _ <- IRMonad.emit(Store(arrayReg, ptrToArrayReg))
+              _ <- IRMonad.withNewVariable(name, ptrToArrayReg)
+            } yield ()
+          )
+          case _ => (
+            for {
+              reg <- getNewRegister()
+              _ <- IRMonad.emit(Alloc(reg, t.size(), t.alignment()))
+              _ <- IRMonad.withNewVariable(name, reg)
+            } yield ()
+          )
+        }
       }
       case Assignment(leftSide, rightSide) => {
         for {

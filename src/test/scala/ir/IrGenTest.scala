@@ -26,7 +26,7 @@ class IrGenTest extends GoldCopyFunSuite {
       case Right((ast, _)) => ast
     }
     val empty: Map[String, Type] = Map()
-    implicit val typeMap:TypeMap = CombinedTypeCheck.check(ast)
+    implicit val typeMap: TypeMap = CombinedTypeCheck.check(ast)
     val coreAst = Desugar.desugar(ast)
     val irgen = IRGenerator.newIrGenerator()
     val program = IRGenerator.pub_lower(coreAst)
@@ -138,6 +138,27 @@ class IrGenTest extends GoldCopyFunSuite {
       }
       """
     )
+  }
+  goldcopyTest("basic array gen test") {
+    irGenHelper(
+      """
+      int main() {
+        int a[10];
+        *a = 10;
+        return *a;
+      }
+      """
+    )
+  }
+  goldcopyTest("dereferncing a reference of an lvalue") {
+    irGenHelper(
+      """
+      int main() {
+        int a = 4;
+        return *(&a);
+      }
+      """
+      )
   }
 
 }
