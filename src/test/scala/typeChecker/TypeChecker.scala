@@ -929,4 +929,39 @@ class TypeCheckerTest extends FunSuite {
     )
   }
 
+  test("array definition") {
+    expectTypePass("""
+    int main() { 
+      int a[100];
+    }
+  """)
+  }
+
+  test("array of pointers definition") {
+    expectTypePass("""
+    int main() { 
+      int* a[100];
+    }
+  """)
+  }
+
+  test("pointer to array definition") {
+    expectTypePass("""
+    int main() { 
+      int (*a)[100];
+    }
+  """)
+  }
+
+  test("array decay") {
+    expectTypePass("""
+    int main() { 
+      int a[100];
+      int *b = a;
+    }
+  """)
+  }
+
+
+
 }
