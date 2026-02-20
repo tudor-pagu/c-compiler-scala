@@ -14,40 +14,43 @@ import tpagu.compiler.Span
 import tpagu.compiler.parser.DeclarationSpecifier
 import tpagu.compiler.parser.Declarator
 
-class DecayPass extends PropagatingTypeChecker[Boolean] {
-  override protected def initializeContext: Boolean =
-    false
+case class DecayContext(decayFunctions:Boolean, decayArrays:Boolean)
+
+class DecayPass extends PropagatingTypeChecker[DecayContext] {
+  override protected def initializeContext: DecayContext =
+    DecayContext(false, false)
 
   override protected def updateContextForChildren(
-      context: Boolean,
+      context: DecayContext,
       typeMap: TypeMap,
       node: AstExt
-  ): Boolean = {
+  ): DecayContext = {
 
     node.node match {
-      case AstExtKind.Binary(op, l, r) => true
-      case AstExtKind.PostfixOperation(op, e) => true
+      case AstExtKind.Binary(op, l, r) => DecayContext(true, true)
+      case AstExtKind.PostfixOperation(op, e) => DecayContext(true, true)
       case AstExtKind.PrefixOperation(op, e) => {
         op match {
-          case PrefixOp.UnaryPlus => true
-          case PrefixOp.Negation  => true
+          case PrefixOp.UnaryPlus => DecayContext(true, true)
+          case PrefixOp.Negation  => DecayContext(true, true)
+          case PrefixOp.AddressOf => DecayContext(context.decayFunctions, false)
           case _                  => context
         }
       }
-      case AstExtKind.DeclarationList(_,_) => true
-      case AstExtKind.Assignment(_,_) => true
-      case AstExtKind.Return(_) => true
+      case AstExtKind.DeclarationList(_,_) => DecayContext(true, true)
+      case AstExtKind.Assignment(_,_) => DecayContext(true, true)
+      case AstExtKind.Return(_) => DecayContext(true, true)
 
       case _ => context
     }
   }
 
   override protected def updateTypeMap(
-      context: Boolean,
+      context: DecayContext,
       typeMap: TypeMap,
       node: AstExt
   ): TypeMap = {
-    if (!context) {
+    if (!context.decayFunctions && !context.decayArrays) {
       return typeMap
     }
 
@@ -57,10 +60,10 @@ class DecayPass extends PropagatingTypeChecker[Boolean] {
     }
 
     t.get match {
-      case fun @ FunT(_,_) => {
+      case fun @ FunT(_,_) if context.decayFunctions => {
         typeMap + (node -> PtrT(fun))
       }
-      case array @ ArrayT(_,innerT) => {
+      case array @ ArrayT(_,innerT) if context.decayArrays => {
         typeMap + (node -> PtrT(innerT))
       }
       case _ => {

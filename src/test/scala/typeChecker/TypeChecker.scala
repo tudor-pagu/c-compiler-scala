@@ -962,6 +962,25 @@ class TypeCheckerTest extends FunSuite {
   """)
   }
 
+  test("array doesn't decay to ptr to array, but to ptr to element type") {
+    expectTypeError("""
+      int main() {
+        int a[100];
+        int (*a_ptr)[100];
+        a_ptr = a;
+      }
+      """, "")
+  }
+
+  test("array doesn't decay when you take reference of it") {
+    expectTypePass("""
+      int main() {
+        int a[100];
+        int (*a_ptr)[100];
+        a_ptr = &a;
+      }
+      """)
+  }
 
 
 }
