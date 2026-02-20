@@ -6,6 +6,7 @@ import tpagu.compiler.CompilerError
 import tpagu.compiler.lexer.TokenInfo
 import tpagu.compiler.typeChecker.getNameOfDeclarator
 import tpagu.compiler.Spanned
+import tpagu.compiler.desugar.IntLiteral
 
 def expressionStatement: ParseRule[AstExt] = (for {
   expr <- expression
@@ -64,9 +65,10 @@ def typeSpecifier: ParseRule[DeclarationSpecifier] =
             "This branch shouldnt be reachable in type specifier. Check the oneOf and the branches you handle match."
           )
       }
-      )) <|>
-    typedefName.map(x => Right(x:DeclarationSpecifier))
-    .named("type specifier")
+    )) <|>
+    typedefName
+      .map(x => Right(x: DeclarationSpecifier))
+      .named("type specifier")
 
 def typeQualifier: ParseRule[TypeQualifier] =
   (for {
@@ -82,7 +84,9 @@ def storageClassSpecifier: ParseRule[DeclarationSpecifier] =
 
 def declarationSpecifier: ParseRule[DeclarationSpecifier] = {
   // this map upcast is needed since typeQualifier returns TypeSpecifier but for the Or parser combinator these must be the exact same type
-  (typeSpecifier <|> typeQualifier.map(a => Right(a: DeclarationSpecifier)) <|> storageClassSpecifier)
+  (typeSpecifier <|> typeQualifier.map(a =>
+    Right(a: DeclarationSpecifier)
+  ) <|> storageClassSpecifier)
 }
 
 def initDeclarator: ParseRule[(Declarator, Option[AstExt])] = {
@@ -108,19 +112,26 @@ def declaration: ParseRule[AstExt] =
     .withUpdatedLexer((output, lexer) => {
       output.node match {
         case AstExtKind.DeclarationList(specs, decl) => {
-          /** typedef handling within the parser:
-           *  This is where we give feedback to the parser so that it knows to now treat any 
-           *  example of these names as a Typename and then pass the token back to the parser
-           *  as TypedefNames.
-           */
+
+          /** typedef handling within the parser: This is where we give feedback
+            * to the parser so that it knows to now treat any example of these
+            * names as a Typename and then pass the token back to the parser as
+            * TypedefNames.
+            */
           if (specs.contains(StorageClassSpecifier.Typedef)) {
-            val names = decl.map(d => getNameOfDeclarator(d._1)).filter(_.isDefined).map(_.get)
+            val names = decl
+              .map(d => getNameOfDeclarator(d._1))
+              .filter(_.isDefined)
+              .map(_.get)
             lexer.withTypeNames(lexer.typeNames ++ names)
           } else {
             lexer
           }
         }
-        case _ => throw RuntimeException("Unreachable code, declaration rule should always yield a DeclarationList.")
+        case _ =>
+          throw RuntimeException(
+            "Unreachable code, declaration rule should always yield a DeclarationList."
+          )
       }
     })
     .named("declaration")
@@ -136,7 +147,7 @@ def extractName(nameOpt: Option[AstExt]): Option[String] = nameOpt.map {
   case _                                   => ???
 }
 
-def parameterSuffix:ParseRule[DeclaratorSuffix] = {
+def parameterSuffix: ParseRule[DeclaratorSuffix] = {
   val emptyParamList = for {
     _ <- Just(Token.OpenParen)
     _ <- Just(Token.CloseParen)
@@ -151,8 +162,19 @@ def parameterSuffix:ParseRule[DeclaratorSuffix] = {
   (emptyParamList <|> nonEmptyParamList)
 }
 
-def declaratorSuffix:ParseRule[DeclaratorSuffix] = 
-  (parameterSuffix)
+def arraySuffix: ParseRule[DeclaratorSuffix] = {
+  (for {
+    _ <- Just(Token.OpenBracket)
+    len <- literal
+    _ <- Just(Token.CloseBracket)
+  } yield len.node match {
+    case AstExtKind.IntLiteral(value) => Right(DeclaratorSuffix.Array(value))
+    case _ => Left(parserError("Expected int literal",len.span))
+  }).named("array suffix")
+}
+
+def declaratorSuffix: ParseRule[DeclaratorSuffix] =
+  (parameterSuffix <|> arraySuffix)
 
 def directDeclarator: ParseRule[DirectDeclarator] =
   val paranthesizedDeclaration = for {
@@ -165,11 +187,10 @@ def directDeclarator: ParseRule[DirectDeclarator] =
     case name <- identifier.maybe
   } yield Right(DirectDeclarator.Variable(extractName(name)))
 
-  //TODO: Is it really correct to let anonymous declarators
-  //like this? this variableDeclarator can always eat up nothing
-  //so this can be sketchy...
-  (paranthesizedDeclaration <|> variableDeclarator )
-
+  // TODO: Is it really correct to let anonymous declarators
+  // like this? this variableDeclarator can always eat up nothing
+  // so this can be sketchy...
+  (paranthesizedDeclaration <|> variableDeclarator)
 
 def blockStatement: ParseRule[AstExt] = (for {
   lexer <- GetLexer()
@@ -186,7 +207,7 @@ def functionDefinition: ParseRule[AstExt] =
     body <- blockStatement
   } yield Right(
     AstExtKind
-      .FunctionDefinition(Declaration(declSpecs,decl), body)
+      .FunctionDefinition(Declaration(declSpecs, decl), body)
   )).withSpan
     .named("function definition")
 

@@ -130,4 +130,8 @@ class StatementTest extends GoldCopyFunSuite {
   goldcopyTest("function pointer declaration 4") {
     testParseRule("int (*p)(int, long long);", statement)
   }
+
+  goldcopyTest("array declaration") {
+    testParseRule("int a[100];", statement)
+  }
 }

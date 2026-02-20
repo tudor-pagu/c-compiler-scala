@@ -40,6 +40,15 @@ object Token {
     override def transitionFromEmpty(c: Char): Boolean = c == '}'
     override def isAcceptable(): Boolean = true
 
+  case object OpenBracket extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == '['
+    override def isAcceptable(): Boolean = true
+
+  case object CloseBracket extends Token:
+    override def transitionFromEmpty(c: Char): Boolean = c == ']'
+    override def isAcceptable(): Boolean = true
+
+
   case object Semicolon extends Token:
     override def transitionFromEmpty(c: Char): Boolean = c == ';'
     override def isAcceptable(): Boolean = true
@@ -100,6 +109,8 @@ object Token {
     CloseParen,
     OpenBrace,
     CloseBrace,
+    OpenBracket,
+    CloseBracket,
     Semicolon,
     Comma,
     Plus,
