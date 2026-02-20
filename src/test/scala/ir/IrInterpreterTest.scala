@@ -676,6 +676,37 @@ class IrInterpreterTest extends FunSuite {
       }
       """,3)
   }
+
+  test("array with more complicated pointer arithmetic") {
+    irInterpHelper("""
+      int main() {
+        int a[10];
+        *a = 2;
+        *(a + 8) = 42;
+
+        int* second_element 
+          = a + (1 + 3 * 2 + 2 - 1);
+
+        return *a + *second_element;
+      }
+      """,44)
+  }
+
+  test("array with more complicated pointer arithmetic 2") {
+    irInterpHelper("""
+      int main() {
+        int a[10];
+        *a = 2;
+        *(a + 8) = 42;
+
+        int* second_element 
+          = 1 + 3 * 2 + a + (2 - 1);
+
+        return *a + *second_element;
+      }
+      """,44)
+  }
+
 }
 
 // TODO: implement this
