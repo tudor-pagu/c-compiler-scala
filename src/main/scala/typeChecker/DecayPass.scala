@@ -60,6 +60,9 @@ class DecayPass extends PropagatingTypeChecker[Boolean] {
       case fun @ FunT(_,_) => {
         typeMap + (node -> PtrT(fun))
       }
+      case array @ ArrayT(_,innerT) => {
+        typeMap + (node -> PtrT(innerT))
+      }
       case _ => {
         typeMap
       }

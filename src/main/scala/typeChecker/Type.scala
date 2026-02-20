@@ -44,6 +44,15 @@ case class NumT(
   override def alignment(): Long = width
 }
 
+case class ArrayT(
+    length: Int,
+    innerT: Type
+) extends Type {
+  override def size(): Int = length * innerT.size()
+  override def alignment(): Long = innerT.alignment()
+  override def qualifiers = TypeQualifiers() // as per C spec, arrays cannot themselves have qualifiers, only the element type
+}
+
 case class PtrT(innerT: Type, qualifiers: TypeQualifiers = TypeQualifiers())
     extends Type {
   override def size(): Int = 8 // just hard coding 8 bytes as the size
@@ -93,14 +102,16 @@ object Type {
     }
   }
 
-  /**
-   * Return true if left has more or equal qualifiers than right
-   */
-  def qualifierSuperset(left: TypeQualifiers, right: TypeQualifiers): Boolean = {
+  /** Return true if left has more or equal qualifiers than right
+    */
+  def qualifierSuperset(
+      left: TypeQualifiers,
+      right: TypeQualifiers
+  ): Boolean = {
     return (left.isConst || (!right.isConst)) && (left.isVolatile || (!right.isVolatile)) && (left.isRestrict || (!right.isRestrict))
   }
 
-  def pointsToConst(t:Type):Boolean = {
+  def pointsToConst(t: Type): Boolean = {
     t match {
       case PtrT(inner, quals) => {
         inner.qualifiers.isConst
@@ -118,11 +129,16 @@ object Type {
   def qualifierCompatibleTypes(left: Type, right: Type): Boolean = {
 
     (left, right) match {
-      case (NumT(_,_,lQuals), NumT(_,_,rQuals)) => {
-        return dropQualifiers(left) == dropQualifiers(right) && qualifierSuperset(lQuals, rQuals)
+      case (NumT(_, _, lQuals), NumT(_, _, rQuals)) => {
+        return dropQualifiers(left) == dropQualifiers(
+          right
+        ) && qualifierSuperset(lQuals, rQuals)
       }
       case (PtrT(innerL, qualsL), PtrT(innerR, qualsR)) => {
-        return qualifierCompatibleTypes(innerL, innerR) && qualifierSuperset(qualsL, qualsR) && (!pointsToConst(innerL) || pointsToConst(left))
+        return qualifierCompatibleTypes(innerL, innerR) && qualifierSuperset(
+          qualsL,
+          qualsR
+        ) && (!pointsToConst(innerL) || pointsToConst(left))
       }
       case _ => {
         return false

@@ -170,7 +170,7 @@ def applySuffixesToBaseType(
       )
     }
     case DeclaratorSuffix.Array(length) => {
-      throw NotImplementedError("Arrays not yet implemented.")
+      return ArrayT(length, baseType)
     }
   }
 }
