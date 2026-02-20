@@ -629,6 +629,18 @@ class IrInterpreterTest extends FunSuite {
     )
   }
 
+  test("immediate call") {
+    irInterpHelper(
+      """
+    int add(int x, int y) { return x + y; }
+    int (*getfn())(int, int) { return add; }
+    int main() {
+      return getfn()(2,3);
+    }""",
+      5
+    )
+  }
+
 }
 
 // TODO: implement this
