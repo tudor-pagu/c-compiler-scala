@@ -666,6 +666,16 @@ class IrInterpreterTest extends FunSuite {
     )
   }
 
+  test("accessing other elements in array") {
+    irInterpHelper("""
+      int main() {
+        int a[10];
+        *a = 1;
+        *(a + 1) = 2;
+        return *a + *(a+1);
+      }
+      """,3)
+  }
 }
 
 // TODO: implement this
