@@ -12,6 +12,9 @@ import tpagu.compiler.typeChecker.FunT
 import tpagu.compiler.CompilerError
 import tpagu.compiler.Span
 
+/**
+ * When adding a new pass, it needs to be added to this object.
+ */
 object CombinedTypeCheck {
   def check(e: AstExt): TypeMap = {
     val typeMap = TypeMap()
