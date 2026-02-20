@@ -4,7 +4,7 @@ import tpagu.compiler.File
 import tpagu.compiler.desugar.Desugar
 import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.parser.translationUnit
-import tpagu.compiler.typeChecker.{Type, TypeCheck}
+import tpagu.compiler.typeChecker.{Type}
 import scala.util.matching.Regex
 import tpagu.compiler.GoldCopyFunSuite
 import tpagu.compiler.typeChecker.CombinedTypeCheck
@@ -25,7 +25,6 @@ class IrGenTest extends GoldCopyFunSuite {
       case Left(err)       => fail(s"Could not parse expression: $err")
       case Right((ast, _)) => ast
     }
-    val typeChecker = TypeCheck()
     val empty: Map[String, Type] = Map()
     implicit val typeMap:TypeMap = CombinedTypeCheck.check(ast)
     val coreAst = Desugar.desugar(ast)

@@ -46,3 +46,5 @@ class TypeMap(
 
   def getTypeOfFunction(key: AstExt) = functionMap(key.id)
 }
+
+type TypeEnvironment = Map[String, Type]

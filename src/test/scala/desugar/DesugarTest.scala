@@ -2,7 +2,6 @@ import munit.FunSuite
 import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.File
 import tpagu.compiler.parser.translationUnit
-import tpagu.compiler.typeChecker.TypeCheck
 import tpagu.compiler.typeChecker.Type
 import tpagu.compiler.desugar.Desugar
 import tpagu.compiler.GoldCopyFunSuite
@@ -16,7 +15,6 @@ class DesugarTest extends GoldCopyFunSuite {
       case Left(err)       => fail(s"Could not parse expression: $err")
       case Right((ast, _)) => ast
     }
-    val typeChecker = TypeCheck()
     val empty: Map[String, Type] = Map()
     implicit val typeMap:TypeMap = CombinedTypeCheck.check(ast)
     val coreAst = Desugar.desugar(ast)

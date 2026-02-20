@@ -49,3 +49,7 @@ case class CompilerError(val message: String, val span: Span, kind: ErrorKind = 
     case t@_ => s"${t.toString}: Error at ${span.start}-${span.end}: $message"
   }
 }
+
+def createError(message: String, span: Span): CompilerError =
+  CompilerError(message, span)
+

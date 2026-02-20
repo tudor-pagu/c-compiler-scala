@@ -1,5 +1,6 @@
 package tpagu.compiler.typeChecker
 
+import tpagu.compiler.createError
 import tpagu.compiler.parser.AstExt
 import tpagu.compiler.AstID
 import tpagu.compiler.parser.AstExtKind

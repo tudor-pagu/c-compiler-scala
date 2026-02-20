@@ -13,6 +13,7 @@ import tpagu.compiler.CompilerError
 import tpagu.compiler.Span
 import tpagu.compiler.parser.DeclarationSpecifier
 import tpagu.compiler.parser.Declarator
+import tpagu.compiler.createError
 
 def updateTypeEnvironmentForDeclaration(
     node: AstExt,

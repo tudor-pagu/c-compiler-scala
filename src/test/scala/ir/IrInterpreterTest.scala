@@ -6,7 +6,7 @@ import tpagu.compiler.File
 import tpagu.compiler.desugar.Desugar
 import tpagu.compiler.lexer.Lexer
 import tpagu.compiler.parser.translationUnit
-import tpagu.compiler.typeChecker.{Type, TypeCheck}
+import tpagu.compiler.typeChecker.{Type}
 
 import scala.util.matching.Regex
 import tpagu.compiler.typeChecker.CombinedTypeCheck
@@ -19,7 +19,6 @@ class IrInterpreterTest extends FunSuite {
       case Left(err)       => fail(s"Could not parse expression: $err")
       case Right((ast, _)) => ast
     }
-    val typeChecker = TypeCheck()
     implicit val typeMap: TypeMap = CombinedTypeCheck.check(ast)
 
     val coreAst = Desugar.desugar(ast)
