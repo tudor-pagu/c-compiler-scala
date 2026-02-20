@@ -7,6 +7,7 @@ import tpagu.compiler.typeChecker.{FunT, NumT}
 import tpagu.compiler.ir.IR.Load
 import tpagu.compiler.typeChecker.PtrT
 import tpagu.compiler.typeChecker.ArrayT
+import tpagu.compiler.typeChecker.Type
 
 type VariableMap = Map[String, Register]
 
@@ -222,15 +223,33 @@ object IRGenerator {
     })
   }
 
+  def handlePointerArithmetic(
+      ptr: AstC,
+      ptrType: PtrT,
+      offsetNode: AstC
+  ): IRMonad[Operand] = {
+    for {
+      ptrAddress <- produceExpression(ptr)
+      finalAddressReg <- getNewRegister()
+      offset <- produceExpression(offsetNode)
+      multipliedOffset <- getNewRegister()
+      _ <- IRMonad.emit(
+        IR.Mult(offset, Immediate(ptrType.innerT.size()), multipliedOffset)
+      )
+      _ <- IRMonad.emit(IR.Add(ptrAddress, multipliedOffset, finalAddressReg))
+    } yield finalAddressReg
+  }
+
   def getAddressOfLvalue(e: AstC): IRMonad[Operand] = e match {
     case Identifier(name, t) =>
       IRMonad(ir => { (Nil, ir, ir.variableMap.get(name).get) })
     case Dereference(ptr, t) => {
       for {
-        innerAddress <- getAddressOfLvalue(ptr)
-        reg <- getNewRegister()
-        _ <- IRMonad.emit(IR.Load(innerAddress, reg, width = t.size().toInt))
-      } yield reg
+        innerAddress <- produceExpression(ptr)
+      } yield innerAddress
+    }
+    case Add(l, r, t) => {
+      produceExpression(e)
     }
     case _ =>
       throw RuntimeException(
@@ -247,14 +266,25 @@ object IRGenerator {
       case IntLiteral(value, t) => {
         IRMonad.just(Immediate(value))
       }
+
       case Add(l, r, t) => {
-        for {
-          lop <- produceExpression(l)
-          rop <- produceExpression(r)
-          reg <- getNewRegister()
-          _ <- IRMonad.emit(IR.Add(lop, rop, reg))
-        } yield (reg)
+        (l.t, r.t) match {
+          case (PtrT(_, _), PtrT(_, _)) => {
+            throw RuntimeException(s"Pointer difference not yet implemented.")
+          }
+          case (p @ PtrT(_, _), _) => handlePointerArithmetic(l, p, r)
+          case (_, p @ PtrT(_, _)) => handlePointerArithmetic(r, p, l)
+          case (_, _) => {
+            for {
+              lop <- produceExpression(l)
+              rop <- produceExpression(r)
+              reg <- getNewRegister()
+              _ <- IRMonad.emit(IR.Add(lop, rop, reg))
+            } yield (reg)
+          }
+        }
       }
+
       case Mult(l, r, t) => {
         for {
           lop <- produceExpression(l)

@@ -25,7 +25,7 @@ class IrInterpreterTest extends FunSuite {
     val program = IRGenerator.pub_lower(coreAst)
     val interpreter = IrInterpreter()
     val interpResult = interpreter.interp(program)
-    assertEquals(interpResult, expectedExitCode)
+    assertEquals(interpResult, expectedExitCode, s"Generated ir: ${program.mkString("\n")}")
   }
 
   test("memory test 1") {

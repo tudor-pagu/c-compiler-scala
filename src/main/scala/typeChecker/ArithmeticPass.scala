@@ -55,6 +55,18 @@ def binaryOpConversion(l: Type, r: Type, span: Span): Type = {
         takeMaxWidth(lt, rt)
       }
     }
+    // Pointer arithmetic
+    case (
+          lt @ NumT(_, _, _),
+          rt @ PtrT(_, _)
+        ) =>
+      rt
+    case (
+          lt @ PtrT(_, _),
+          rt @ NumT(_, _, _)
+        ) =>
+      lt
+
     case _ => {
       throw createError(
         s"Could not convert between types: ${l} and ${r} for binary operation.",
