@@ -1019,7 +1019,8 @@ class TypeCheckerTest extends FunSuite {
         int (*ptr)();
         f = ptr;
       }
-      """,""
+      """,
+      ""
     )
 
   }
@@ -1034,7 +1035,8 @@ class TypeCheckerTest extends FunSuite {
         int (*ptr)();
         (f) = ptr;
       }
-      """,""
+      """,
+      ""
     )
 
   }
@@ -1049,9 +1051,25 @@ class TypeCheckerTest extends FunSuite {
         int (*ptr)();
         (0 + f) = ptr;
       }
-      """,""
+      """,
+      ""
     )
 
+  }
+
+  test("function cant be moved through ptr") {
+    expectTypeError(
+      """
+        int main() { 
+        int a[10];
+        int b[10];
+        int (*ptr)[10] = &a;
+        *ptr = b;
+    }
+
+      """,
+      ""
+    )
   }
 
 }
