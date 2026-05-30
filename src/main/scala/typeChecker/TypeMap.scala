@@ -21,9 +21,10 @@ import tpagu.compiler.parser.AstExt
 class TypeMap(
     map: Map[AstID, Type],
     declarationMap: Map[AstID, List[Type]],
-    functionMap: Map[AstID, Type]
+    functionMap: Map[AstID, Type],
+    unmodifiable: Set[AstID]
 ) {
-  def this() = this(Map.empty, Map.empty, Map.empty)
+  def this() = this(Map.empty, Map.empty, Map.empty, Set.empty)
 
   def apply(key: AstExt): Type =
     map.getOrElse(
@@ -32,19 +33,26 @@ class TypeMap(
     )
 
   def +(kv: (AstExt, Type)): TypeMap =
-    TypeMap(map + (kv._1.id -> kv._2), declarationMap, functionMap)
+    TypeMap(map + (kv._1.id -> kv._2), declarationMap, functionMap, unmodifiable)
 
   def updateDeclarationMap(key: AstExt, types: List[Type]) =
-    TypeMap(map, declarationMap + (key.id -> types), functionMap)
+    TypeMap(map, declarationMap + (key.id -> types), functionMap, unmodifiable)
 
   def getTypesOfDeclaration(key: AstExt) = declarationMap(key.id)
 
   def get(key: AstExt): Option[Type] = map.get(key.id)
 
   def updateFunctionMap(key: AstExt, t : Type) =
-    TypeMap(map, declarationMap, functionMap + (key.id -> t))
+    TypeMap(map, declarationMap, functionMap + (key.id -> t), unmodifiable)
 
   def getTypeOfFunction(key: AstExt) = functionMap(key.id)
+
+  def markUnmodifiable(key: AstExt) = TypeMap(
+    map, declarationMap, functionMap, unmodifiable + key.id
+    )
+
+  def isModifiable(key: AstExt) = !unmodifiable.contains(key.id)
+
 }
 
 type TypeEnvironment = Map[String, Type]

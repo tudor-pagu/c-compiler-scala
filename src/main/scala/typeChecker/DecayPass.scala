@@ -61,10 +61,10 @@ class DecayPass extends PropagatingTypeChecker[DecayContext] {
 
     t.get match {
       case fun @ FunT(_,_) if context.decayFunctions => {
-        typeMap + (node -> PtrT(fun))
+        (typeMap + (node -> PtrT(fun))).markUnmodifiable(node)
       }
       case array @ ArrayT(_,innerT) if context.decayArrays => {
-        typeMap + (node -> PtrT(innerT))
+        (typeMap + (node -> PtrT(innerT))).markUnmodifiable(node)
       }
       case _ => {
         typeMap

@@ -64,6 +64,10 @@ class AssignmentPass extends PropagatingTypeChecker[Unit] {
           throw createError(s"Trying to assign to non-lvalue.", left.span)
         }
 
+        if !typeMap.isModifiable(left) then {
+          throw createError(s"This expression is not modifiable", left.span)
+        }
+
         val tm1 = if (leftT != rightT) {
           if (isAssignmentConversionAllowed(leftT, rightT)) {
             typeMap + (right -> leftT)

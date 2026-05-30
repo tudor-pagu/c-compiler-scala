@@ -963,13 +963,16 @@ class TypeCheckerTest extends FunSuite {
   }
 
   test("array doesn't decay to ptr to array, but to ptr to element type") {
-    expectTypeError("""
+    expectTypeError(
+      """
       int main() {
         int a[100];
         int (*a_ptr)[100];
         a_ptr = a;
       }
-      """, "")
+      """,
+      ""
+    )
   }
 
   test("array doesn't decay when you take reference of it") {
@@ -981,6 +984,74 @@ class TypeCheckerTest extends FunSuite {
       }
       """)
   }
+  test("array cant be moved set") {
+    expectTypeError(
+      """
+    int main() {
+      int a[30];
+      a = 5;
+    }
+    """,
+      ""
+    )
+  }
 
+  test("array cant be moved around") {
+    expectTypeError(
+      """
+    int main() {
+      int a[30];
+      int* ptr;
+      a = ptr;
+    }
+    """,
+      ""
+    )
+  }
+
+  test("function cant be moved around") {
+    expectTypeError(
+      """
+      int f() {
+        return 0;
+      }
+      int main() {
+        int (*ptr)();
+        f = ptr;
+      }
+      """,""
+    )
+
+  }
+
+  test("function cant be moved around 2") {
+    expectTypeError(
+      """
+      int f() {
+        return 0;
+      }
+      int main() {
+        int (*ptr)();
+        (f) = ptr;
+      }
+      """,""
+    )
+
+  }
+
+  test("function cant be moved around 3") {
+    expectTypeError(
+      """
+      int f() {
+        return 0;
+      }
+      int main() {
+        int (*ptr)();
+        (0 + f) = ptr;
+      }
+      """,""
+    )
+
+  }
 
 }
