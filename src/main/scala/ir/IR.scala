@@ -7,19 +7,11 @@ sealed trait Instruction
 
 sealed trait Operand
 
-// We're assuming that we're running on a 64 bit machine, and all registers are considered to be
-// 64 bit. All immediate values must also be 64 bits 2s complement integers.
-// Memory is byte addressable. Store and Load operations will write to arbitrary locations in memory.
-// By default, we write 8 bytes, but the width parameter can allow the store or load to store or load smaller values.
-// Width must be either 1,2,4, or 8, any other value is invalid.
-//
-// A Register is an abstraction of a machine register and can simply hold a 64 bit value.
-// Operations in my IR typicall deal either with two registers, or with storing or loading a register to memory
-case class Register(id: Long) extends Operand {
+case class Register(id: Long, t: IRType) extends Operand {
   override def toString(): String = s"r$id"
 
 }
-case class Immediate(value: Long) extends Operand {
+case class Immediate(value: Long, t: IRType) extends Operand {
   override def toString(): String = s"$$$value"
 }
 // A label may be assigned to a register. It is like the label can be encoded
